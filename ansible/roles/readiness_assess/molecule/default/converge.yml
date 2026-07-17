@@ -1,0 +1,54 @@
+---
+- name: Exercise common readiness assessment
+  hosts: all
+  gather_facts: false
+  vars:
+    catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+
+  pre_tasks:
+    - name: Load readiness fixtures
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ catalog_root }}/contracts/server-build/contract.yaml"
+          name: active_contract
+        - file: "{{ catalog_root }}/build-manifests/examples/windows-build-waiting-network.yaml"
+          name: windows_waiting
+        - file: "{{ catalog_root }}/build-manifests/examples/linux-build-waiting-operations.yaml"
+          name: linux_waiting
+
+  tasks:
+    - name: Assess Windows network gate
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ windows_waiting }}"
+        readiness_assess_gate_name: networkIntegration
+        readiness_assess_occurred_at: "2026-01-15T16:10:00Z"
+
+    - name: Retain Windows report
+      ansible.builtin.set_fact:
+        molecule_windows_report: "{{ readiness_assess_report }}"
+
+    - name: Assess Linux operational gate
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ linux_waiting }}"
+        readiness_assess_gate_name: operationalValidation
+        readiness_assess_occurred_at: "2026-01-16T16:25:00Z"
+
+    - name: Assert platform-neutral blockers
+      ansible.builtin.assert:
+        that:
+          - molecule_windows_report.status.blockerCount | int == 2
+          - readiness_assess_report.status.blockerCount | int == 3
+          - >-
+            molecule_windows_report.status.blockers[0].decisionOwner
+            == 'network-platform'
+          - >-
+            readiness_assess_report.status.blockers[0].decisionOwner
+            == 'service-management'

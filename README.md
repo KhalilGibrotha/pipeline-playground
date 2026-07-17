@@ -63,7 +63,9 @@ The repository contains:
 - a starter execution environment and OpenShift Dev Spaces definition
 - architecture, maturity, and object-storage guidance
 
-Manifest creation from an approved request event is now implemented. The next slice is stage-specific readiness assessment and pause/resume updates.
+Manifest creation, common Windows/Linux readiness assessment, and durable
+pause/resume lifecycle updates are now implemented. The next slice is a local
+S3-compatible artifact adapter.
 
 ## Repository guide
 
@@ -71,6 +73,7 @@ Manifest creation from an approved request event is now implemented. The next sl
 - [docs/server-build-poc.md](docs/server-build-poc.md) - Windows/Linux VMware test case
 - [docs/architecture.md](docs/architecture.md) - state, artifact, adapter, and handoff boundaries
 - [docs/process-views.md](docs/process-views.md) - complementary Mermaid views for leadership, architecture, and development discussions
+- [docs/demo-runbook.md](docs/demo-runbook.md) - ten-minute leadership demonstration and reusable concept-lab pattern
 - [docs/roadmap.md](docs/roadmap.md) - maturity path and recommended next milestone
 - [docs/object-storage-artifacts.md](docs/object-storage-artifacts.md) - S3-compatible artifact design and evaluation case
 - [docs/toolchain.md](docs/toolchain.md) - local, Dev Spaces, CI, and AAP development flow
@@ -105,6 +108,22 @@ Run the manifest creation, duplicate-event, Windows/Linux, and invalid-profile t
 ```bash
 cd ansible
 ansible-playbook playbooks/test-manifest-creation.yml
+```
+
+Run the blocked-to-ready Windows/Linux lifecycle test:
+
+```bash
+cd ansible
+ansible-playbook playbooks/test-readiness-lifecycle.yml
+```
+
+Run the role-level Molecule scenario:
+
+```bash
+cd ansible
+for role in roles/*; do
+  (cd "$role" && molecule test)
+done
 ```
 
 The fixture relationships can also be checked from a Windows-native Python shell:

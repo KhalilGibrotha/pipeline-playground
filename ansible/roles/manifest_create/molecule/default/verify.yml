@@ -1,0 +1,45 @@
+---
+- name: Verify manifest creation artifacts
+  hosts: all
+  gather_facts: false
+  vars:
+    catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+    scenario_artifact_root: "{{ molecule_ephemeral_directory }}/artifacts"
+
+  tasks:
+    - name: Load generated and expected manifests
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ scenario_artifact_root }}/requests/REQ-DEMO-0001/manifest.yaml"
+          name: generated_windows_manifest
+        - file: "{{ catalog_root }}/build-manifests/examples/windows-build-complete.yaml"
+          name: expected_windows_manifest
+        - file: "{{ scenario_artifact_root }}/requests/REQ-DEMO-0003/manifest.yaml"
+          name: generated_linux_manifest
+        - file: "{{ catalog_root }}/build-manifests/examples/linux-build-complete.yaml"
+          name: expected_linux_manifest
+
+    - name: Find manifest-created lifecycle events
+      ansible.builtin.find:
+        paths:
+          - "{{ scenario_artifact_root }}/requests/REQ-DEMO-0001/events"
+          - "{{ scenario_artifact_root }}/requests/REQ-DEMO-0003/events"
+        patterns: "*-manifest-created.json"
+        file_type: file
+      register: manifest_created_events
+
+    - name: Check that invalid input produced no request artifacts
+      ansible.builtin.stat:
+        path: "{{ scenario_artifact_root }}/requests/REQ-DEMO-INVALID"
+      register: invalid_request_artifacts
+
+    - name: Assert deterministic, idempotent scenario results
+      ansible.builtin.assert:
+        that:
+          - generated_windows_manifest == expected_windows_manifest
+          - generated_linux_manifest == expected_linux_manifest
+          - manifest_created_events.matched == 2
+          - not invalid_request_artifacts.stat.exists
+        fail_msg: Manifest artifacts did not match the role's expected behavior.

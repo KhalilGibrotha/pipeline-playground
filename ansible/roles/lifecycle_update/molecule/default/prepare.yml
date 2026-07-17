@@ -1,0 +1,9 @@
+---
+- name: Prepare lifecycle update test
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Reset lifecycle artifacts
+      ansible.builtin.file:
+        path: "{{ molecule_ephemeral_directory }}/artifacts"
+        state: absent

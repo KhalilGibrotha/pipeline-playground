@@ -1,0 +1,39 @@
+---
+- name: Exercise blocked lifecycle update
+  hosts: all
+  gather_facts: false
+  vars:
+    catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+
+  pre_tasks:
+    - name: Load lifecycle fixtures
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ catalog_root }}/contracts/server-build/contract.yaml"
+          name: active_contract
+        - file: "{{ catalog_root }}/build-manifests/examples/windows-build-waiting-network.yaml"
+          name: waiting_manifest
+
+  tasks:
+    - name: Assess blocked network gate
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ waiting_manifest }}"
+        readiness_assess_gate_name: networkIntegration
+        readiness_assess_occurred_at: "2026-01-15T16:10:00Z"
+
+    - name: Apply blocked lifecycle update
+      ansible.builtin.include_role:
+        name: lifecycle_update
+      vars:
+        lifecycle_update_contract: "{{ active_contract }}"
+        lifecycle_update_manifest: "{{ waiting_manifest }}"
+        lifecycle_update_readiness_report: "{{ readiness_assess_report }}"
+        lifecycle_update_expected_revision: 4
+        lifecycle_update_event_id: EVT-MOLECULE-BLOCKED
+        lifecycle_update_occurred_at: "2026-01-15T16:10:00Z"
+        lifecycle_update_artifact_root: "{{ molecule_ephemeral_directory }}/artifacts"

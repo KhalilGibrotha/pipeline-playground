@@ -11,15 +11,19 @@ The repository has proved the first executable slice:
 - request-plus-approval idempotency
 - incompatible platform rejection
 - Linux execution-environment tests through Podman
+- Molecule syntax, behavior, expected-failure, artifact, and idempotence tests for every current role
+- common Windows/Linux readiness assessment with source and owner reporting
+- blocked-to-ready lifecycle revisions, append-only events, stale-revision rejection, and event idempotency
 
-The next milestone should make the retained manifest operational by evaluating readiness and updating lifecycle state.
+The next milestone should move the proved local artifact model behind an
+S3-compatible adapter and test the object-store behaviors the design depends on.
 
 ## Maturity path
 
 ```mermaid
 flowchart LR
-    M1["1. Manifest creation<br/>proved"] --> M2["2. Readiness and pause/resume<br/>next"]
-    M2 --> M3["3. S3-compatible artifact adapter"]
+    M1["1. Manifest creation<br/>proved"] --> M2["2. Readiness and pause/resume<br/>proved locally"]
+    M2 --> M3["3. S3-compatible artifact adapter<br/>next"]
     M3 --> M4["4. VMware provisioning adapter"]
     M4 --> M5["5. Windows/Linux configuration parity"]
     M5 --> M6["6. IPAM and operational integrations"]
@@ -27,7 +31,7 @@ flowchart LR
     M7 --> M8["8. Non-production AAP promotion"]
 ```
 
-## Recommended next milestone: readiness and lifecycle updates
+## Completed milestone: readiness and lifecycle updates
 
 ### Build
 
@@ -55,6 +59,29 @@ flowchart LR
 - readiness reports for Windows and Linux
 - successful Podman test run
 - documented fields still lacking an authoritative source or owner
+
+The repository now produces the first four items with synthetic inputs. The
+remaining ownership decisions must be collected from each adopting
+organization.
+
+## Recommended next milestone: S3-compatible artifact adapter
+
+### Build
+
+1. Define a provider-neutral artifact-store role interface.
+2. Run a local S3-compatible service through Podman.
+3. Store current manifests, immutable revisions, events, and readiness reports.
+4. Add endpoint, certificate, retry, and credential boundaries appropriate for AAP.
+5. Test conditional writes or another explicit single-writer mechanism.
+
+### Test
+
+- repeated writes preserve prior manifest versions
+- append-only event keys cannot be silently replaced
+- stale or competing revisions are rejected
+- transient failures retry without duplicating lifecycle events
+- request artifacts can be retrieved by request ID
+- no credentials or sensitive values are written into manifests
 
 ## Following milestones
 

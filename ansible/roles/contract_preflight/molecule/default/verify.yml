@@ -1,0 +1,31 @@
+---
+- name: Verify contract preflight result
+  hosts: all
+  gather_facts: false
+  vars:
+    contract_file: >-
+      {{ playbook_dir }}/../../../../../catalog/contracts/server-build-infoblox/contract.yaml
+
+  tasks:
+    - name: Load infrastructure contract
+      ansible.builtin.include_vars:
+        file: "{{ contract_file }}"
+        name: active_contract
+
+    - name: Re-evaluate supported request  # noqa var-naming[no-role-prefix]
+      ansible.builtin.include_role:
+        name: contract_preflight
+      vars:
+        request_id: REQ-MOLECULE-0001
+        enterprise_app_id: APP-MOLECULE-01
+        hostname: molecule-001.example.test
+        datacenter: rtp
+        is_zta: true
+        zta_classification: internal
+        zta_environment: prod
+        zta_exposure: core
+
+    - name: Assert verified zone token
+      ansible.builtin.assert:
+        that:
+          - ea_microsegment_id == 'zone_prod_internal_core'

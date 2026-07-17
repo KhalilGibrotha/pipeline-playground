@@ -71,12 +71,22 @@ spec:
         - placement.compute_cluster
         - placement.storage_policy
       outcome: base-build-ready
+      blockedSafeState: not-provisioned
     networkIntegration:
       requiredInputs:
         - integrations.ipam.network_profile
         - integrations.ipam.dns_domain
       contractRef: ../server-build-infoblox/contract.yaml
       outcome: network-integration-ready
+      blockedSafeState: powered-off-on-isolated-staging-network
+    operationalValidation:
+      requiredInputs:
+        - operations.service_owner
+        - operations.support_group
+        - operations.monitoring_profile
+        - operations.backup_profile
+      outcome: operational-validation
+      blockedSafeState: powered-on-restricted-to-build-services
     handoff:
       requiredInputs:
         - operations.service_owner
@@ -91,6 +101,7 @@ spec:
         - observed_state_reconciliation
         - verification_result
       outcome: handoff-complete
+      blockedSafeState: powered-on-managed-awaiting-handoff
   inputs:
     request.request_id:
       type: string

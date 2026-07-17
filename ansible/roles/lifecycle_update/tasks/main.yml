@@ -1,0 +1,251 @@
+---
+- name: Validate lifecycle update envelope
+  ansible.builtin.assert:
+    that:
+      - lifecycle_update_contract.kind == 'AutomationContract'
+      - lifecycle_update_manifest.kind == 'BuildManifest'
+      - lifecycle_update_readiness_report.kind == 'ReadinessReport'
+      - lifecycle_update_event_id | length > 0
+      - lifecycle_update_occurred_at | length > 0
+      - lifecycle_update_expected_revision | int > 0
+      - >-
+        lifecycle_update_readiness_report.metadata.request_id ==
+        lifecycle_update_manifest.spec.request.request_id
+      - >-
+        lifecycle_update_readiness_report.metadata.manifest_revision | int ==
+        lifecycle_update_expected_revision | int
+    fail_msg: Lifecycle update inputs do not identify one manifest revision and readiness result.
+
+- name: Set lifecycle artifact locations
+  ansible.builtin.set_fact:
+    lifecycle_update_request_root: >-
+      {{
+        lifecycle_update_artifact_root
+        + '/requests/'
+        + lifecycle_update_manifest.spec.request.request_id
+      }}
+    lifecycle_update_event_path: >-
+      {{
+        lifecycle_update_artifact_root
+        + '/requests/'
+        + lifecycle_update_manifest.spec.request.request_id
+        + '/events/'
+        + lifecycle_update_event_id
+        + '.json'
+      }}
+
+- name: Check for an existing transition event
+  ansible.builtin.stat:
+    path: "{{ lifecycle_update_event_path }}"
+  register: lifecycle_update_event_stat
+
+- name: Load existing transition event
+  ansible.builtin.include_vars:
+    file: "{{ lifecycle_update_event_path }}"
+    name: lifecycle_update_existing_event
+  when: lifecycle_update_event_stat.stat.exists
+
+- name: Load stored current manifest for duplicate event
+  ansible.builtin.include_vars:
+    file: "{{ lifecycle_update_request_root }}/manifest.yaml"
+    name: lifecycle_update_existing_manifest
+  when: lifecycle_update_event_stat.stat.exists
+
+- name: Validate duplicate transition identity
+  ansible.builtin.assert:
+    that:
+      - >-
+        lifecycle_update_existing_event.spec.request_id ==
+        lifecycle_update_manifest.spec.request.request_id
+      - >-
+        lifecycle_update_existing_event.spec.source_revision | int ==
+        lifecycle_update_expected_revision | int
+      - >-
+        lifecycle_update_existing_event.spec.readiness_gate ==
+        lifecycle_update_readiness_report.metadata.gate
+      - >-
+        lifecycle_update_existing_event.spec.target_revision | int ==
+        lifecycle_update_existing_manifest.metadata.revision | int
+    fail_msg: Existing lifecycle event conflicts with the requested transition.
+  when: lifecycle_update_event_stat.stat.exists
+
+- name: Validate fresh revision and lifecycle direction
+  when: not lifecycle_update_event_stat.stat.exists
+  block:
+    - name: Set lifecycle phase indexes
+      ansible.builtin.set_fact:
+        lifecycle_update_current_phase_index: >-
+          {{
+            lifecycle_update_contract.spec.lifecycle.phases.index(
+              lifecycle_update_manifest.status.phase
+            )
+          }}
+        lifecycle_update_target_phase_index: >-
+          {{
+            lifecycle_update_contract.spec.lifecycle.phases.index(
+              lifecycle_update_readiness_report.status.resumePhase
+            )
+          }}
+
+    - name: Reject stale revisions and backward transitions
+      ansible.builtin.assert:
+        that:
+          - >-
+            lifecycle_update_manifest.metadata.revision | int ==
+            lifecycle_update_expected_revision | int
+          - lifecycle_update_readiness_report.status.resumePhase in lifecycle_update_contract.spec.lifecycle.phases
+          - >-
+            not lifecycle_update_readiness_report.status.ready | bool
+            or lifecycle_update_target_phase_index > lifecycle_update_current_phase_index
+        fail_msg: Lifecycle update is stale, unknown, or would move the manifest backward.
+
+    - name: Set next revision and status
+      ansible.builtin.set_fact:
+        lifecycle_update_next_revision: "{{ lifecycle_update_expected_revision | int + 1 }}"
+        lifecycle_update_next_status: >-
+          {{
+            {
+              'phase': (
+                lifecycle_update_readiness_report.status.resumePhase
+                if lifecycle_update_readiness_report.status.ready | bool
+                else lifecycle_update_manifest.status.phase
+              ),
+              'outcome': (
+                'ready'
+                if lifecycle_update_readiness_report.status.ready | bool
+                else 'blocked'
+              )
+            }
+            | combine(
+                {}
+                if lifecycle_update_readiness_report.status.ready | bool
+                else {
+                  'resumePhase': lifecycle_update_readiness_report.status.resumePhase,
+                  'safeState': lifecycle_update_readiness_report.status.safeState,
+                  'blockers': lifecycle_update_readiness_report.status.blockers
+                }
+              )
+          }}
+
+    - name: Build next manifest revision
+      ansible.builtin.set_fact:
+        lifecycle_update_document: >-
+          {{
+            lifecycle_update_manifest
+            | combine(
+                {
+                  'metadata': lifecycle_update_manifest.metadata
+                  | combine(
+                      {
+                        'updatedAt': lifecycle_update_occurred_at,
+                        'revision': lifecycle_update_next_revision
+                      }
+                    ),
+                  'status': lifecycle_update_next_status
+                },
+                recursive=false
+              )
+          }}
+
+    - name: Build append-only lifecycle event
+      ansible.builtin.set_fact:
+        lifecycle_update_event:
+          apiVersion: catalog.example.io/v1alpha1
+          kind: BuildLifecycleEvent
+          metadata:
+            event_id: "{{ lifecycle_update_event_id }}"
+            occurred_at: "{{ lifecycle_update_occurred_at }}"
+          spec:
+            request_id: "{{ lifecycle_update_manifest.spec.request.request_id }}"
+            source_revision: "{{ lifecycle_update_expected_revision | int }}"
+            target_revision: "{{ lifecycle_update_next_revision | int }}"
+            readiness_gate: "{{ lifecycle_update_readiness_report.metadata.gate }}"
+            transition:
+              from: "{{ lifecycle_update_manifest.status.phase }}"
+              to: "{{ lifecycle_update_document.status.phase }}"
+              outcome: "{{ lifecycle_update_document.status.outcome }}"
+            manifest_key: "{{ lifecycle_update_manifest.metadata.artifactKey }}"
+            readiness_report: >-
+              {{
+                'artifacts/readiness-revision-'
+                + (lifecycle_update_next_revision | string)
+                + '-'
+                + lifecycle_update_readiness_report.metadata.gate
+                + '.yaml'
+              }}
+
+    - name: Ensure revision and event directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ lifecycle_update_request_root }}/revisions"
+        - "{{ lifecycle_update_request_root }}/events"
+        - "{{ lifecycle_update_request_root }}/artifacts"
+
+    - name: Write immutable manifest revision
+      ansible.builtin.copy:
+        dest: >-
+          {{
+            lifecycle_update_request_root
+            + '/revisions/revision-'
+            + (lifecycle_update_next_revision | string)
+            + '.yaml'
+          }}
+        content: "{{ lifecycle_update_document | to_nice_yaml(indent=2, sort_keys=false) }}"
+        mode: "0644"
+        force: false
+
+    - name: Write current manifest projection
+      ansible.builtin.copy:
+        dest: "{{ lifecycle_update_request_root }}/manifest.yaml"
+        content: "{{ lifecycle_update_document | to_nice_yaml(indent=2, sort_keys=false) }}"
+        mode: "0644"
+
+    - name: Write immutable readiness report
+      ansible.builtin.copy:
+        dest: >-
+          {{
+            lifecycle_update_request_root
+            + '/artifacts/readiness-revision-'
+            + (lifecycle_update_next_revision | string)
+            + '-'
+            + lifecycle_update_readiness_report.metadata.gate
+            + '.yaml'
+          }}
+        content: >-
+          {{
+            lifecycle_update_readiness_report
+            | to_nice_yaml(indent=2, sort_keys=false)
+          }}
+        mode: "0644"
+        force: false
+
+    - name: Write append-only lifecycle event
+      ansible.builtin.copy:
+        dest: "{{ lifecycle_update_event_path }}"
+        content: "{{ lifecycle_update_event | to_nice_json(indent=2) }}"
+        mode: "0644"
+        force: false
+
+- name: Publish lifecycle update result
+  ansible.builtin.set_fact:
+    lifecycle_update_result:
+      disposition: >-
+        {{ 'existing' if lifecycle_update_event_stat.stat.exists else 'created' }}
+      event_path: "{{ lifecycle_update_event_path }}"
+      request_id: "{{ lifecycle_update_manifest.spec.request.request_id }}"
+      source_revision: "{{ lifecycle_update_expected_revision | int }}"
+      target_revision: >-
+        {{
+          lifecycle_update_existing_event.spec.target_revision
+          if lifecycle_update_event_stat.stat.exists
+          else lifecycle_update_next_revision
+        }}
+      manifest: >-
+        {{
+          lifecycle_update_existing_manifest
+          if lifecycle_update_event_stat.stat.exists
+          else lifecycle_update_document
+        }}

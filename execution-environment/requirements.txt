@@ -1,6 +1,7 @@
 ansible-core
 ansible-dev-tools
 ansible-lint
+molecule
 yamllint
 jmespath
 jsonschema

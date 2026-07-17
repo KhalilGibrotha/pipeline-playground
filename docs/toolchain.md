@@ -64,10 +64,14 @@ Basic readiness validation belongs here. A general policy engine is deferred unt
 - mocked VMware, Infoblox, object-storage, and CMDB responses and failures
 - role-level assertions for normalized inputs and readiness results
 - artifact version, event, retry, and reconciliation checks
-- idempotence checks when disposable Windows and Linux targets become available
+- Molecule scenarios for every role, including success, idempotence, and expected-failure behavior
+- target-host idempotence checks when disposable Windows and Linux systems become available
 - `ansible-test` sanity, unit, and integration tests after reusable content is packaged as a collection
 
-Molecule can be evaluated for role scenarios, but it should not be introduced until it simplifies an actual test boundary.
+Artifact-processing roles use Molecule's delegated driver because they do not
+configure a remote target. Infrastructure and operating-system roles should
+use containers or disposable VMware targets appropriate to the behavior being
+tested. A role is not considered complete without a runnable Molecule scenario.
 
 ### Packaging
 
@@ -128,6 +132,8 @@ ansible-lint ansible/
 cd ansible
 ansible-playbook playbooks/test-manifest-creation.yml
 ansible-playbook playbooks/mock-infoblox-provision.yml -e @vars/request-good.yml
+cd roles/manifest_create
+molecule test
 ```
 
 Once an execution-environment image is available:

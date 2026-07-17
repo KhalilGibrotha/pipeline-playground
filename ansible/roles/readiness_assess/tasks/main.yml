@@ -1,0 +1,53 @@
+---
+- name: Validate readiness assessment inputs
+  ansible.builtin.assert:
+    that:
+      - readiness_assess_contract.kind == 'AutomationContract'
+      - readiness_assess_manifest.kind == 'BuildManifest'
+      - readiness_assess_gate_name in readiness_assess_contract.spec.readinessGates
+      - readiness_assess_occurred_at | length > 0
+      - readiness_assess_manifest.metadata.revision | int > 0
+      - readiness_assess_manifest.spec.request.request_id | default('') | length > 0
+    fail_msg: Readiness assessment requires a contract, manifest, known gate, timestamp, and revision.
+
+- name: Select readiness gate
+  ansible.builtin.set_fact:
+    readiness_assess_gate: >-
+      {{ readiness_assess_contract.spec.readinessGates[readiness_assess_gate_name] }}
+    readiness_assess_blockers: []
+
+- name: Evaluate every required input
+  ansible.builtin.include_tasks: evaluate_input.yml
+  loop: "{{ readiness_assess_gate.requiredInputs | default([]) }}"
+  loop_control:
+    loop_var: readiness_assess_required_field
+
+- name: Evaluate every required evidence reference
+  ansible.builtin.include_tasks: evaluate_evidence.yml
+  loop: "{{ readiness_assess_gate.requiredEvidence | default([]) }}"
+  loop_control:
+    loop_var: readiness_assess_required_evidence
+
+- name: Build deterministic readiness report
+  ansible.builtin.set_fact:
+    readiness_assess_report:
+      apiVersion: catalog.example.io/v1alpha1
+      kind: ReadinessReport
+      metadata:
+        request_id: "{{ readiness_assess_manifest.spec.request.request_id }}"
+        manifest_revision: "{{ readiness_assess_manifest.metadata.revision | int }}"
+        assessed_at: "{{ readiness_assess_occurred_at }}"
+        gate: "{{ readiness_assess_gate_name }}"
+      status:
+        ready: "{{ readiness_assess_blockers | length == 0 }}"
+        outcome: >-
+          {{
+            readiness_assess_gate.outcome
+            if readiness_assess_blockers | length == 0
+            else 'blocked'
+          }}
+        currentPhase: "{{ readiness_assess_manifest.status.phase }}"
+        resumePhase: "{{ readiness_assess_gate.outcome }}"
+        safeState: "{{ readiness_assess_gate.blockedSafeState }}"
+        blockerCount: "{{ readiness_assess_blockers | length }}"
+        blockers: "{{ readiness_assess_blockers }}"

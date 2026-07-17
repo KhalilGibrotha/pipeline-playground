@@ -1,0 +1,9 @@
+---
+- name: Prepare manifest creation test
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Remove artifacts from an earlier scenario run
+      ansible.builtin.file:
+        path: "{{ molecule_ephemeral_directory }}/artifacts"
+        state: absent

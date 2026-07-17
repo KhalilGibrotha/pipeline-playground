@@ -1,0 +1,30 @@
+---
+- name: Resolve required evidence reference
+  ansible.builtin.set_fact:
+    readiness_assess_evidence_value: >-
+      {{
+        (readiness_assess_manifest.spec.artifacts | default({}))
+        [readiness_assess_required_evidence] | default(none)
+      }}
+
+- name: Record missing required evidence
+  ansible.builtin.set_fact:
+    readiness_assess_blockers: >-
+      {{
+        readiness_assess_blockers
+        + [
+            {
+              'field': 'artifacts.' + readiness_assess_required_evidence,
+              'kind': 'evidence',
+              'expectedSource': 'prior-automation-phase',
+              'decisionOwner': 'automation-workflow-owner'
+            }
+          ]
+      }}
+  when:
+    - >-
+      readiness_assess_evidence_value is none
+      or (
+        readiness_assess_evidence_value is string
+        and readiness_assess_evidence_value | trim | length == 0
+      )

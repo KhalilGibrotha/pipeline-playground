@@ -1,0 +1,5 @@
+---
+readiness_assess_contract: {}
+readiness_assess_manifest: {}
+readiness_assess_gate_name: baseBuild
+readiness_assess_occurred_at: ""

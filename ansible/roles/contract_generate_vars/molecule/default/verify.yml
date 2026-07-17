@@ -1,0 +1,19 @@
+---
+- name: Verify normalized variable artifact
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Load generated contract variables
+      ansible.builtin.include_vars:
+        file: >-
+          {{ molecule_ephemeral_directory }}/artifacts/REQ-MOLECULE-0001-contract-vars.yml
+        name: generated_artifact
+
+    - name: Assert normalized variable content
+      ansible.builtin.assert:
+        that:
+          - generated_artifact.request.request_id == 'REQ-MOLECULE-0001'
+          - generated_artifact.request.datacenter == 'rtp'
+          - generated_artifact.request.is_zta | bool
+          - generated_artifact.derived.ea_microsegment_id == 'zone_prod_internal_core'
+          - generated_artifact.outputs.app_sdlc_environment == 'production'

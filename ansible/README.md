@@ -1,6 +1,9 @@
 # Ansible integration model
 
-This directory implements approved-event manifest creation and the earlier mocked IPAM vertical slice. It does not yet implement readiness transitions or VMware and OS provisioning from `docs/server-build-poc.md`.
+This directory implements approved-event manifest creation, common readiness
+assessment, durable lifecycle updates, and the earlier mocked IPAM vertical
+slice. It does not yet implement real VMware or OS provisioning from
+`docs/server-build-poc.md`.
 
 The Ansible content in this POC should consume validated contract artifacts, not raw edits from the catalog tree.
 
@@ -16,12 +19,37 @@ The Ansible content in this POC should consume validated contract artifacts, not
 
 ## Next implementation slice
 
-- add one readiness playbook for Windows and Linux manifests
-- report missing fields with their expected source and decision owner
+- retain manifest versions, events, and evidence through a local S3-compatible adapter
+- test conditional writes and concurrent revision handling
 - generate normalized VMware placement, inventory, and variables
-- represent a safe staged build and resume behavior
-- retain manifest versions, events, and evidence through a local object-store adapter
+- add a mocked VMware provider interface
 - retain the existing mock Infoblox role as an integration adapter
+
+## Readiness and lifecycle updates
+
+The `readiness_assess` role evaluates every required field for a selected
+contract gate. It returns all blockers with their expected source, decision
+owner, safe state, and resume phase.
+
+The `lifecycle_update` role:
+
+1. verifies the expected manifest revision
+2. rejects backward or unknown ready transitions
+3. preserves the manifest `spec` while updating lifecycle status
+4. writes an immutable numbered revision and current projection
+5. writes an append-only lifecycle event
+6. treats a replayed event ID as idempotent
+
+Run the Windows/Linux blocked-to-ready regression:
+
+```bash
+cd ansible
+ansible-playbook playbooks/test-readiness-lifecycle.yml
+```
+
+The test blocks a Windows build on network data and a Linux build on operations
+data, supplies the missing values, resumes each build, rejects a stale revision,
+and verifies that desired state is retained.
 
 ## Approved-event manifest creation
 
@@ -58,6 +86,20 @@ ansible-playbook playbooks/test-manifest-creation.yml
 ```
 
 The tests compare generated Windows and Linux manifests with checked-in expected artifacts, replay the Windows event to verify idempotency, and confirm an incompatible platform request is rejected.
+
+Role-level Molecule tests:
+
+```bash
+cd ansible
+for role in roles/*; do
+  (cd "$role" && molecule test)
+done
+```
+
+Every role has a default Molecule scenario. The scenarios cover successful
+behavior, Molecule's idempotence pass, deterministic outputs, and relevant
+expected failures. They use Molecule's delegated driver because these roles
+operate on catalog and simulation artifacts rather than managed target hosts.
 
 ## Why this pattern matters
 

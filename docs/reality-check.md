@@ -88,6 +88,13 @@ The Ansible project documents `ansible-test` sanity, unit, and integration testi
 
 Use lint, syntax checks, fixtures, and role assertions immediately. Add `ansible-test` when content becomes a collection and real integration tests when disposable targets exist.
 
+The POC now runs a Molecule scenario for every repository-local role. The
+artifact-processing scenarios use a delegated Linux instance and prove syntax,
+expected behavior, expected failures, deterministic artifacts, and idempotence
+inside the Podman execution environment. This is meaningful coverage for the
+current roles, but it does not substitute for disposable VMware, Windows, or
+Linux targets when provider and operating-system roles are added.
+
 ### Execution environments support runtime parity
 
 Execution environments and `ansible-navigator` support a common dependency model for Podman, Dev Spaces, CI, and AAP. Native Windows should not become the Ansible control-node standard.
@@ -113,6 +120,16 @@ Append-only lifecycle events are still valuable because raw object versions alon
 
 VMware, Infoblox, object storage, and CMDB discovery should begin as deterministic fixtures or adapter simulations. Move one adapter at a time to a safe non-production system.
 
+### Readiness and pause/resume are now proved locally
+
+The POC now demonstrates one common evaluator for Windows and Linux. It reports
+all missing values with source and decision owner, records a safe blocked state,
+retains the manifest `spec`, and resumes from a corrected revision.
+
+The lifecycle role also rejects a stale revision and treats a replayed event ID
+as idempotent. This proves the local artifact semantics; it does not yet prove
+distributed concurrency or object-store conditional writes.
+
 ## Adopt now
 
 1. One common server-build contract for Windows and Linux.
@@ -124,19 +141,16 @@ VMware, Infoblox, object storage, and CMDB discovery should begin as determinist
 7. Desired-state and observed-state separation.
 8. Local artifact layout matching an eventual S3 prefix layout.
 9. Thin playbooks, focused roles, provider adapters, and OS adapters.
-10. A purpose-built execution environment and minimal CI checks.
+10. A purpose-built execution environment, mandatory role-level Molecule scenarios, and minimal CI checks.
 
 ## Prove next
 
 1. Can the same approved event be delivered twice without creating two builds?
-2. Can Windows and Linux pass through one readiness evaluator?
-3. Can every blocker report its expected source and owner?
-4. Can a build pause and resume without reconstructing variables?
-5. Can mappings deterministically select VMware template, cluster, storage policy, inventory, and role inputs?
-6. Can manifest versions and append-only events survive retries and partial failures?
-7. Can simulated VMware and CMDB values be reconciled with desired state?
-8. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
-9. Can the same tests run locally and in CI?
+2. Can mappings deterministically select VMware template, cluster, storage policy, inventory, and role inputs?
+3. Can manifest versions and append-only events survive object-store retries and partial failures?
+4. Can simulated VMware and CMDB values be reconciled with desired state?
+5. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
+6. Can the same tests run locally and in CI?
 
 ## Defer
 
@@ -233,7 +247,8 @@ An approved request creates exactly one manifest and approval snapshot.
 
 ### 2. Visible readiness
 
-Windows and Linux builds report actionable blockers and resume safely.
+Proved locally with synthetic Windows network and Linux operations blockers.
+Non-production provider safe states still require organizational validation.
 
 ### 3. Deterministic VMware inputs
 

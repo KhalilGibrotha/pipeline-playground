@@ -15,13 +15,13 @@ commands:
     exec:
       component: tools
       commandLine: >-
-        python3 -m pip install --user ansible-core ansible-dev-tools ansible-lint yamllint jmespath jsonschema
+        python3 -m pip install --user ansible-core ansible-dev-tools ansible-lint molecule yamllint jmespath jsonschema
       workingDir: ${PROJECT_SOURCE}
   - id: show-versions
     exec:
       component: tools
       commandLine: >-
-        bash -lc "ansible --version && ansible-lint --version && yamllint --version"
+        bash -lc "ansible --version && ansible-lint --version && molecule --version && yamllint --version"
       workingDir: ${PROJECT_SOURCE}
   - id: shell
     exec:

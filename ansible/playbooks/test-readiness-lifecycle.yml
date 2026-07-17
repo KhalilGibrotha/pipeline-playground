@@ -1,0 +1,263 @@
+---
+- name: Test common Windows and Linux readiness lifecycle
+  hosts: localhost
+  gather_facts: false
+  vars:
+    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build/contract.yaml"
+    windows_manifest_file: >-
+      {{ playbook_dir }}/../../catalog/build-manifests/examples/windows-build-waiting-network.yaml
+    linux_manifest_file: >-
+      {{ playbook_dir }}/../../catalog/build-manifests/examples/linux-build-waiting-operations.yaml
+
+  pre_tasks:
+    - name: Create isolated readiness artifact directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: pipeline-playground-readiness-test
+      register: readiness_test_tempdir
+
+    - name: Load readiness fixtures
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ contract_file }}"
+          name: active_contract
+        - file: "{{ windows_manifest_file }}"
+          name: windows_waiting_manifest
+        - file: "{{ linux_manifest_file }}"
+          name: linux_waiting_manifest
+
+  tasks:
+    - name: Assess blocked Windows network readiness
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ windows_waiting_manifest }}"
+        readiness_assess_gate_name: networkIntegration
+        readiness_assess_occurred_at: "2026-01-15T16:10:00Z"
+
+    - name: Retain blocked Windows readiness report
+      ansible.builtin.set_fact:
+        readiness_test_windows_blocked_report: "{{ readiness_assess_report }}"
+
+    - name: Verify actionable Windows blockers
+      ansible.builtin.assert:
+        that:
+          - not readiness_test_windows_blocked_report.status.ready | bool
+          - readiness_test_windows_blocked_report.status.blockerCount | int == 2
+          - >-
+            readiness_test_windows_blocked_report.status.blockers
+            | map(attribute='field')
+            | list
+            == [
+              'integrations.ipam.network_profile',
+              'integrations.ipam.dns_domain'
+            ]
+          - >-
+            readiness_test_windows_blocked_report.status.safeState
+            == 'powered-off-on-isolated-staging-network'
+
+    - name: Persist blocked Windows revision
+      ansible.builtin.include_role:
+        name: lifecycle_update
+      vars:
+        lifecycle_update_contract: "{{ active_contract }}"
+        lifecycle_update_manifest: "{{ windows_waiting_manifest }}"
+        lifecycle_update_readiness_report: "{{ readiness_test_windows_blocked_report }}"
+        lifecycle_update_expected_revision: 4
+        lifecycle_update_event_id: EVT-DEMO-0002-BLOCKED
+        lifecycle_update_occurred_at: "2026-01-15T16:10:00Z"
+        lifecycle_update_artifact_root: "{{ readiness_test_tempdir.path }}"
+
+    - name: Build corrected Windows manifest
+      ansible.builtin.set_fact:
+        readiness_test_windows_corrected_manifest: >-
+          {{
+            lifecycle_update_result.manifest
+            | combine(
+                {
+                  'spec': lifecycle_update_result.manifest.spec
+                  | combine(
+                      {
+                        'integrations': {
+                          'ipam': {
+                            'network_profile': 'test-application',
+                            'dns_domain': 'example.test'
+                          }
+                        }
+                      },
+                      recursive=true
+                    )
+                },
+                recursive=false
+              )
+          }}
+
+    - name: Reassess corrected Windows network readiness
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ readiness_test_windows_corrected_manifest }}"
+        readiness_assess_gate_name: networkIntegration
+        readiness_assess_occurred_at: "2026-01-15T16:30:00Z"
+
+    - name: Retain ready Windows report
+      ansible.builtin.set_fact:
+        readiness_test_windows_ready_report: "{{ readiness_assess_report }}"
+
+    - name: Resume Windows lifecycle
+      ansible.builtin.include_role:
+        name: lifecycle_update
+      vars:
+        lifecycle_update_contract: "{{ active_contract }}"
+        lifecycle_update_manifest: "{{ readiness_test_windows_corrected_manifest }}"
+        lifecycle_update_readiness_report: "{{ readiness_test_windows_ready_report }}"
+        lifecycle_update_expected_revision: 5
+        lifecycle_update_event_id: EVT-DEMO-0002-RESUMED
+        lifecycle_update_occurred_at: "2026-01-15T16:30:00Z"
+        lifecycle_update_artifact_root: "{{ readiness_test_tempdir.path }}"
+
+    - name: Retain resumed Windows result
+      ansible.builtin.set_fact:
+        readiness_test_windows_resumed_result: "{{ lifecycle_update_result }}"
+
+    - name: Replay Windows resume event
+      ansible.builtin.include_role:
+        name: lifecycle_update
+      vars:
+        lifecycle_update_contract: "{{ active_contract }}"
+        lifecycle_update_manifest: "{{ readiness_test_windows_corrected_manifest }}"
+        lifecycle_update_readiness_report: "{{ readiness_test_windows_ready_report }}"
+        lifecycle_update_expected_revision: 5
+        lifecycle_update_event_id: EVT-DEMO-0002-RESUMED
+        lifecycle_update_occurred_at: "2026-01-15T16:30:00Z"
+        lifecycle_update_artifact_root: "{{ readiness_test_tempdir.path }}"
+
+    - name: Verify Windows resume and event idempotency
+      ansible.builtin.assert:
+        that:
+          - readiness_test_windows_ready_report.status.ready | bool
+          - readiness_test_windows_resumed_result.manifest.metadata.revision | int == 6
+          - readiness_test_windows_resumed_result.manifest.status.phase == 'network-integration-ready'
+          - readiness_test_windows_resumed_result.manifest.status.outcome == 'ready'
+          - lifecycle_update_result.disposition == 'existing'
+          - >-
+            readiness_test_windows_resumed_result.manifest.spec
+            == readiness_test_windows_corrected_manifest.spec
+
+    - name: Verify stale Windows revision is rejected
+      block:
+        - name: Attempt stale Windows lifecycle update
+          ansible.builtin.include_role:
+            name: lifecycle_update
+          vars:
+            lifecycle_update_contract: "{{ active_contract }}"
+            lifecycle_update_manifest: "{{ readiness_test_windows_resumed_result.manifest }}"
+            lifecycle_update_readiness_report: "{{ readiness_test_windows_ready_report }}"
+            lifecycle_update_expected_revision: 5
+            lifecycle_update_event_id: EVT-DEMO-0002-STALE
+            lifecycle_update_occurred_at: "2026-01-15T16:31:00Z"
+            lifecycle_update_artifact_root: "{{ readiness_test_tempdir.path }}"
+
+        - name: Record unexpected stale update acceptance
+          ansible.builtin.set_fact:
+            readiness_test_stale_rejected: false
+
+      rescue:
+        - name: Record expected stale update rejection
+          ansible.builtin.set_fact:
+            readiness_test_stale_rejected: true
+
+    - name: Assess blocked Linux operations readiness
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ linux_waiting_manifest }}"
+        readiness_assess_gate_name: operationalValidation
+        readiness_assess_occurred_at: "2026-01-16T16:25:00Z"
+
+    - name: Retain blocked Linux readiness report
+      ansible.builtin.set_fact:
+        readiness_test_linux_blocked_report: "{{ readiness_assess_report }}"
+
+    - name: Persist blocked Linux revision
+      ansible.builtin.include_role:
+        name: lifecycle_update
+      vars:
+        lifecycle_update_contract: "{{ active_contract }}"
+        lifecycle_update_manifest: "{{ linux_waiting_manifest }}"
+        lifecycle_update_readiness_report: "{{ readiness_test_linux_blocked_report }}"
+        lifecycle_update_expected_revision: 6
+        lifecycle_update_event_id: EVT-DEMO-0004-BLOCKED
+        lifecycle_update_occurred_at: "2026-01-16T16:25:00Z"
+        lifecycle_update_artifact_root: "{{ readiness_test_tempdir.path }}"
+
+    - name: Build corrected Linux manifest
+      ansible.builtin.set_fact:
+        readiness_test_linux_corrected_manifest: >-
+          {{
+            lifecycle_update_result.manifest
+            | combine(
+                {
+                  'spec': lifecycle_update_result.manifest.spec
+                  | combine(
+                      {
+                        'operations': {
+                          'support_group': 'example-linux-support',
+                          'monitoring_profile': 'standard-test',
+                          'backup_profile': 'standard-test'
+                        }
+                      },
+                      recursive=true
+                    )
+                },
+                recursive=false
+              )
+          }}
+
+    - name: Reassess corrected Linux operations readiness
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ readiness_test_linux_corrected_manifest }}"
+        readiness_assess_gate_name: operationalValidation
+        readiness_assess_occurred_at: "2026-01-16T16:45:00Z"
+
+    - name: Retain ready Linux report
+      ansible.builtin.set_fact:
+        readiness_test_linux_ready_report: "{{ readiness_assess_report }}"
+
+    - name: Resume Linux lifecycle
+      ansible.builtin.include_role:
+        name: lifecycle_update
+      vars:
+        lifecycle_update_contract: "{{ active_contract }}"
+        lifecycle_update_manifest: "{{ readiness_test_linux_corrected_manifest }}"
+        lifecycle_update_readiness_report: "{{ readiness_test_linux_ready_report }}"
+        lifecycle_update_expected_revision: 7
+        lifecycle_update_event_id: EVT-DEMO-0004-RESUMED
+        lifecycle_update_occurred_at: "2026-01-16T16:45:00Z"
+        lifecycle_update_artifact_root: "{{ readiness_test_tempdir.path }}"
+
+    - name: Verify common Linux lifecycle outcome
+      ansible.builtin.assert:
+        that:
+          - readiness_test_linux_blocked_report.status.blockerCount | int == 3
+          - readiness_test_linux_ready_report.status.ready | bool
+          - lifecycle_update_result.manifest.metadata.revision | int == 8
+          - lifecycle_update_result.manifest.status.phase == 'operational-validation'
+          - lifecycle_update_result.manifest.status.outcome == 'ready'
+          - lifecycle_update_result.manifest.spec == readiness_test_linux_corrected_manifest.spec
+          - readiness_test_stale_rejected | bool
+
+  post_tasks:
+    - name: Remove isolated readiness artifact directory
+      ansible.builtin.file:
+        path: "{{ readiness_test_tempdir.path }}"
+        state: absent
+      when: readiness_test_tempdir.path is defined
