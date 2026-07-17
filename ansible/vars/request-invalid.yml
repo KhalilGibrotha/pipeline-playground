@@ -3,7 +3,7 @@ enterprise_app_id: APP12345
 hostname: srv-demo-003.example.test
 datacenter: nowhere
 is_zta: true
-zta_classification: secret
+zta_classification: unsupported-value
 zta_environment: prod
 zta_exposure: edge
 app_sdlc_environment: production

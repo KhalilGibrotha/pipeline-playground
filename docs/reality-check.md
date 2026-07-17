@@ -1,180 +1,273 @@
-# Reality check
+# Reality check and planning guide
 
-This document is the practical review of the supplied architecture direction.
+This is the maintained reality check for Pipeline Playground. Update it as the POC produces evidence.
 
-It separates:
+## Current conclusion
 
-- what is sound and worth keeping
-- what is a good idea but needs tighter boundaries
-- what is likely to break in implementation unless adjusted
+Windows and Linux server builds on VMware are a strong first test case. They expose real problems in approval, desired-state retention, placement, inventory, integrations, pause/resume behavior, testing, and handoff while allowing most lifecycle behavior to remain platform-neutral.
 
-## What is solid
+The broadly reusable capabilities are:
 
-### 1. Navigator plus execution-environment parity
+- approval-triggered tracking-artifact creation
+- integration-data definition and ownership
+- request readiness and blocker reporting
+- desired-state retention and observed-state reconciliation
+- deterministic inventory, placement, and variable generation
+- provider and OS adapters
+- modular Ansible content and repeatable runtimes
+- durable evidence and explicit handoffs
 
-This is the right center of gravity for Ansible development.
+A policy platform, catalog portal, writable CMDB, or enterprise workflow redesign is not required to prove these capabilities.
 
-The Red Hat and upstream Ansible direction supports:
+## Core design decisions
 
-- execution environments as the consistent runtime
-- ansible-builder for constructing those images
-- ansible-navigator as the developer entry point for running content against the same execution model
+### Contract, manifest, workflow, and CMDB are different things
 
-That aligns with your pipeline SAD.
+- **Contract** defines stable meaning, ownership, allowed values, gates, and interfaces.
+- **Manifest** preserves approved intent and the latest phase projection for one build.
+- **Workflow/request system** coordinates active work, concurrency, retries, and human actions.
+- **CMDB discovery** records observed operational state after infrastructure becomes discoverable.
 
-### 2. Internal registry as the execution-environment system of record
+The manifest fills the pre-build and handoff-history gap. It should not be presented as a replacement CMDB.
 
-This is a sound enterprise choice if you want:
+### Windows and Linux should share the lifecycle
 
-- image lifecycle control
-- channel tagging
-- signing and scanning
-- one pull location for dev, CI, and Controller
+Approval, manifest creation, VMware provisioning, readiness, pause/resume, network integration, evidence, reconciliation, and handoff should be common.
 
-Important nuance: this is an architectural standard, not an Ansible Automation Platform product requirement. If you standardize on one internal registry, document it as your chosen operating model, not as a platform limitation.
+Platform-specific content should be limited to supported images, connection behavior, OS configuration, reboot handling, and OS validation. If separate Windows and Linux workflows begin implementing their own status and handoff models, the POC has missed its reuse goal.
 
-### 3. Data contract validation as a gate
+### VMware is an adapter, but a primary one
 
-This is correct. If the contract is going to drive inventory, provisioning, or job inputs, validation cannot be optional. Otherwise the catalog becomes documentation with no operational force.
+The environment is VMware-first, so placement and provisioning must be represented in the common contract. Vendor-specific module calls should remain behind an adapter role.
 
-### 4. The IPAM provisioning use case is a valid first integration
+The current `vmware.vmware` collection includes VM, content-library deployment, power-state, guest-information, tagging, and inventory capabilities. The POC should select and pin collection versions only when the VMware adapter is implemented and tested against the organization's vCenter version.
 
-It is a strong POC target because it has:
+### Object storage is an artifact layer, not the state machine
 
-- clear upstream fields
-- a deterministic decision chain
-- an external API interaction
-- a meaningful failure model
+S3-compatible storage is well suited to request snapshots, manifests, event records, generated inputs, provider results, reconciliation, and final evidence.
 
-It is concrete enough to test the contract idea without needing a full platform.
+It is not automatically well suited to:
 
-## What needs tightening
+- coordinating two writers
+- querying active builds across many fields
+- enforcing a workflow transition graph
+- replacing a service catalog or relational report store
 
-### 1. The three-artifact catalog model should not become three hand-maintained sources forever
+Use one active coordinator and a defined concurrency strategy. Build a search index or query service later only if object-prefix and metadata searches are insufficient.
 
-Your newer roadmap already points to the better answer:
+## Problem-to-pattern fit
 
-- author machine-readable contracts once
-- generate schemas from them
-- eventually generate human-readable catalog views from the same source
+| Observed problem | Pattern to test | POC evidence |
+| --- | --- | --- |
+| Approved intent disappears into tickets and CSV | approval-triggered manifest plus snapshot | manifest revision 1 linked to approval |
+| CMDB is discovery-only | desired/observed separation and reconciliation | handoff comparison artifact |
+| Servers wait after a partial build | stage gates and explicit blocked state | safe state, blockers, owner, resume phase |
+| Developers decide inventory and variables | owned mappings and generated inputs | deterministic output from the same manifest |
+| Windows/Linux flows drift | common lifecycle with platform adapters | shared tests run against both profiles |
+| VMware details leak into orchestration | provider adapter | mock and real provider share an interface |
+| Shared folder/CSV tracking is slow | API-driven object artifacts | measured latency, history, and concurrency comparison |
+| Automation cannot be shared | focused roles, documented interfaces, then collections | second consumer uses a role without copying it |
+| Handoffs are chaotic | final snapshot and named next owner | readable completion/reconciliation record |
 
-That is the right direction. Hand-maintaining a data catalog, source-of-truth matrix, and stakeholder registry is fine for discovery, but not as the long-term authoritative mechanism for enforceable automation.
+## Established practices supporting the direction
 
-### 2. The v1 scope boundary should stay narrow
+### Reusable Ansible content belongs in roles and collections
 
-Your documents are strongest where they keep v1 on inventory and provisioning inputs.
+Ansible collections are the supported packaging boundary for related playbooks, roles, modules, and plugins. Red Hat COP guidance also supports focused roles, simple playbooks, and explicit inventory sources.
 
-Do not pull these into v1 yet:
+Practical interpretation:
 
-- full workflow/job-variable standardization
-- enterprise-wide portal/catalog UX
-- runtime policy orchestration across every automation domain
+- begin with focused repository-local roles
+- define common interfaces before duplicating Windows and Linux behavior
+- move stable reusable content into a versioned collection
+- avoid creating a collection only to satisfy a diagram
 
-Those are later-stage concerns.
+### Collection testing has a defined path
 
-### 3. Local Windows development should be container-first
+The Ansible project documents `ansible-test` sanity, unit, and integration testing, including containerized execution.
 
-This is important enough to state plainly:
+Use lint, syntax checks, fixtures, and role assertions immediately. Add `ansible-test` when content becomes a collection and real integration tests when disposable targets exist.
 
-do not optimize for native Windows Ansible execution.
+### Execution environments support runtime parity
 
-Use:
+Execution environments and `ansible-navigator` support a common dependency model for Podman, Dev Spaces, CI, and AAP. Native Windows should not become the Ansible control-node standard.
 
-- Podman
-- execution environments
-- ansible-navigator
+### S3-compatible access is feasible but must be tested
 
-That gives you a local path that matches Dev Spaces more closely and avoids control-node drift.
+The `amazon.aws.s3_object` module accepts an alternate `endpoint_url` and documents compatibility with several non-AWS services. Its documentation also warns that alternate S3-compatible services are not all tested by the collection.
 
-## What is likely to break if left as-is
+The correct position is:
 
-### 1. "Exactly one subnet per zone token plus site" is too rigid
+- a provider-neutral artifact-store interface
+- local compatible service for development
+- explicit compatibility tests against the on-premises endpoint
+- no credentials or endpoints in manifests
 
-This is the biggest issue in the IPAM integration model.
+### Versioning supports provenance
 
-Operationally, a zone in one site may need:
+S3 versioning assigns versions to repeated writes of the same object key and can preserve prior variants. This supports a current-manifest projection with recoverable history.
 
-- multiple subnets for capacity
-- separate pools by platform or purpose
-- staged migrations
+Append-only lifecycle events are still valuable because raw object versions alone do not explain why a transition occurred.
 
-So this requirement:
+### Mock-first integrations remain appropriate
 
-- works for a very small POC
-- will likely fail as a long-term production assumption
+VMware, Infoblox, object storage, and CMDB discovery should begin as deterministic fixtures or adapter simulations. Move one adapter at a time to a safe non-production system.
 
-A better contract is:
+## Adopt now
 
-- each subnet belongs to exactly one zone token
-- allocation selection may consider zone token, site, purpose, status, and pool eligibility
-- the resolver returns one eligible target subnet, not necessarily the only subnet in the zone
+1. One common server-build contract for Windows and Linux.
+2. Manifest creation when a request is approved.
+3. Request ID plus approval reference as the idempotency key.
+4. Synthetic complete, blocked, invalid, retry, and mismatch manifests.
+5. Explicit phases, blocked reason, safe state, next owner, and resume phase.
+6. VMware placement and template inputs with owned mappings.
+7. Desired-state and observed-state separation.
+8. Local artifact layout matching an eventual S3 prefix layout.
+9. Thin playbooks, focused roles, provider adapters, and OS adapters.
+10. A purpose-built execution environment and minimal CI checks.
 
-### 2. Allocation followed by host update creates a partial-failure problem
+## Prove next
 
-The current sequence is:
+1. Can the same approved event be delivered twice without creating two builds?
+2. Can Windows and Linux pass through one readiness evaluator?
+3. Can every blocker report its expected source and owner?
+4. Can a build pause and resume without reconstructing variables?
+5. Can mappings deterministically select VMware template, cluster, storage policy, inventory, and role inputs?
+6. Can manifest versions and append-only events survive retries and partial failures?
+7. Can simulated VMware and CMDB values be reconciled with desired state?
+8. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
+9. Can the same tests run locally and in CI?
 
-1. allocate IP
-2. write host EAs
+## Defer
 
-If step 2 fails, you now have a consumed address and incomplete metadata. That is survivable for a POC, but not a clean production pattern.
+- OPA or Conftest policy enforcement
+- full ODCS conformance
+- Backstage or another catalog portal
+- enterprise-wide event-driven orchestration
+- CMDB redesign or write integration
+- controller configuration as code for every object
+- multiple execution-environment families
+- universal collection governance
+- production promotion
 
-The design needs one of these:
+## Realities the POC must not hide
 
-- an atomic create/update pattern if the API supports it
-- a compensating rollback path
-- a quarantine/remediation queue for incomplete allocations
+### Approval events are often incomplete
 
-Without that, retries and audit become messy.
+Creating the manifest at approval is useful even when later fields are missing. The contract must distinguish what is mandatory to create the tracking record from what is mandatory to provision or hand off.
 
-### 3. The catalog cannot stay purely descriptive if you want automation value
+### A partial VMware build needs a defined safe state
 
-The earlier SAD positions the catalog as not a runtime service, which is fine.
+The organization must decide whether a blocked VM is uncreated, powered off, isolated, attached to a staging network, or partially configured. It must also define access, expiration, cleanup, owner, and resume event.
 
-But in reality it must still become operationally connected to:
+Automation can otherwise make an unsafe waiting queue faster.
 
-- CI validation
-- generated schemas
-- generated vars or templates
-- promotion evidence
+### Idempotence does not replace workflow state
 
-So the right stance is:
+Ansible idempotence helps repeated configuration converge. It does not record which external allocations completed or coordinate concurrent jobs. Manifest/event state and adapter-specific retry behavior are still required.
 
-- not a runtime platform
-- but definitely an active control artifact in the pipeline
+### Object versioning does not replace concurrency control
 
-### 4. Development automation environment inside the production control plane is not a minor open item
+Versioning preserves overwritten variants. It does not by itself prevent two jobs from advancing the same build. The POC must test conditional writes or use a single active coordinator.
 
-This is a real architecture fork, not a housekeeping decision.
+### Object storage does not remove the need for indexing
 
-It affects:
+Object keys work well when consumers know the request ID. Leadership use cases such as “all blocked production Linux builds older than two days” may eventually require an index, inventory service, or analytics feed.
 
-- credential separation
-- blast radius
-- promotion design
-- audit posture
+Do not reintroduce a manually maintained CSV as that index.
 
-Do not let that stay vague if the POC is meant to influence real delivery patterns.
+### CMDB reconciliation may be delayed
 
-## Recommended proof order
+Discovery may lag handoff or omit fields. Reconciliation should distinguish mismatch from not-yet-observed and define which conditions block handoff.
 
-1. Prove one contract format for one domain.
-2. Generate one schema from it.
-3. Validate good and bad sample payloads.
-4. Generate normalized variables for Ansible.
-5. Simulate the IPAM interaction.
-6. Only then discuss real AAP promotion mechanics.
+### Windows and Linux testing need disposable targets eventually
 
-That order removes the highest-risk ambiguity first.
+Mocks prove lifecycle and adapter behavior. They cannot prove WinRM, SSH, reboots, guest customization, patching, domain/identity behavior, or OS idempotence.
 
-## Bottom line
+### Extra vars are not governance
 
-The direction is viable.
+AAP surveys and extra vars transport values. Contracts, mappings, provenance, and override records establish authority.
 
-The strongest parts are the EE-centered Ansible pipeline and the idea of contract-driven validation.
+## Provider-specific realities
 
-The main adjustments needed are:
+### VMware
 
-- narrow the authoritative source to one machine-readable contract
-- relax the subnet-selection assumption
-- design around partial-failure handling in IP allocation
-- keep the local path containerized
+- Template compatibility must be tied to OS profile and vCenter capability.
+- Clone completion is not the same as guest readiness.
+- VM identity must use durable provider identifiers, not hostname alone.
+- Partial clone/customization failures need cleanup or remediation behavior.
+- Dynamic inventory can provide observed facts but should not overwrite approved intent.
+
+### Infoblox
+
+- A site and zone may have multiple eligible subnets.
+- Allocation plus later metadata update can partially fail.
+- Retry needs an atomic operation, compensating cleanup, or durable remediation record.
+
+### S3-compatible storage
+
+- Compatibility differs across vendors and versions.
+- Versioning, retention, conditional writes, events, policies, certificates, and performance must be tested.
+- Object metadata must not contain secrets or unnecessarily sensitive request data.
+- Retention and deletion behavior must cover cancelled and expired builds.
+
+## Organizational gaps to capture
+
+- approved-request event source and payload owner
+- system coordinating active lifecycle and concurrency
+- owner and authoritative source for every input
+- safe blocked state at each phase
+- approved VMware placement and OS-template mappings
+- manifest/evidence retention and access policy
+- search/index requirements
+- desired fields that must reconcile with discovery
+- non-production VMware, Windows, Linux, IPAM, and S3-compatible targets
+- reusable collection maintainers and release expectations
+- AAP credential and environment boundaries
+
+## Maturity checkpoints
+
+### 1. Traceable creation
+
+An approved request creates exactly one manifest and approval snapshot.
+
+### 2. Visible readiness
+
+Windows and Linux builds report actionable blockers and resume safely.
+
+### 3. Deterministic VMware inputs
+
+Approved facts and mappings generate repeatable placement, inventory, and variables.
+
+### 4. Durable artifact history
+
+Manifest versions, events, and evidence survive retries and can be retrieved by request ID.
+
+### 5. Tested modular content
+
+Common roles and OS/provider adapters have stable interfaces and expected-failure tests.
+
+### 6. Controlled non-production integration
+
+The same content runs through CI and AAP against disposable targets and the on-premises object service.
+
+### 7. Wider governance
+
+Evaluate policy engines, portals, cross-domain cataloging, and broader release governance based on observed needs.
+
+## Reference sources reviewed
+
+- [Red Hat COP Automation Good Practices](https://redhat-cop.github.io/automation-good-practices/)
+- [Red Hat AAP 2.5 developing automation content](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/pdf/developing_automation_content/Red_Hat_Ansible_Automation_Platform-2.5-Developing_automation_content-en-US.pdf)
+- [Ansible Navigator documentation](https://docs.ansible.com/projects/navigator/)
+- [Developing Ansible collections](https://docs.ansible.com/projects/ansible/latest/dev_guide/developing_collections.html)
+- [Testing Ansible collections](https://docs.ansible.com/projects/ansible/latest/dev_guide/developing_collections_testing.html)
+- [vmware.vmware collection](https://docs.ansible.com/projects/ansible/latest/collections/vmware/vmware/index.html)
+- [amazon.aws.s3_object module](https://docs.ansible.com/projects/ansible/latest/collections/amazon/aws/s3_object_module.html)
+- [Amazon S3 versioning concepts](https://docs.aws.amazon.com/AmazonS3/latest/userguide/)
+- [Open Data Contract Standard](https://github.com/bitol-io/open-data-contract-standard)
+- [Infoblox NIOS modules collection](https://docs.ansible.com/projects/ansible/latest/collections/infoblox/nios_modules/index.html)
+
+## Maintenance rule
+
+Update this document whenever the POC proves, disproves, or qualifies an assumption. Move capabilities between `adopt now`, `prove next`, and `defer` as evidence changes.

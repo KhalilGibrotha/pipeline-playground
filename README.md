@@ -1,82 +1,121 @@
 # Pipeline Playground
 
-Reference implementation for contract-driven infrastructure automation, Ansible development workflows, and a mock IPAM provisioning path.
+Proof of concept for a modern Ansible automation development and delivery model, demonstrated through Windows and Linux server builds on VMware.
 
-This repository is a starter proof of concept for two things that need to fit together:
+The practical goal is to replace incomplete handoffs, developer-created inventory decisions, slow file-share tracking, and manually assembled variables with a visible, tested, repeatable flow.
 
-1. A data contract catalog that describes datasets, owners, interfaces, schemas, quality expectations, and control requirements.
-2. A mature automation development pipeline for Ansible Automation Platform that can consume catalog metadata and turn approved contracts into automation inputs.
+## Problem this POC addresses
 
-The current goal is not to fully implement a platform. The goal is to make the operating model concrete enough to review, identify gaps, and decide what to build next.
+A server request may be approved before every downstream integration value is available. That commonly leads to:
 
-## Why this repo exists
+- a server being partially built and held while people search for missing information
+- intended build data being scattered across tickets, CSV files, shared folders, inventories, and playbooks
+- a discovery-only CMDB seeing a machine after creation but not preserving its approved intent or build history
+- automation developers deciding values that should have an accountable business or platform owner
+- Windows and Linux teams implementing similar lifecycle behavior differently
+- handoffs that do not clearly state what is complete, blocked, or still owned by another group
 
-Teams often have three separate problems:
+## POC thesis
 
-- automation depends on shared data that is not governed clearly
-- Ansible development practices drift between teams
-- integrations with systems like IPAM or inventory become hard-coded before the input contract is stable
+A small set of practices can improve this without first building an enterprise platform:
 
-This repository shows a practical way to connect those concerns:
+1. Create a build manifest when a server request is approved.
+2. Preserve approved, supplied, and derived values with provenance throughout the build.
+3. Evaluate stage-specific readiness so a build can pause and resume safely.
+4. Generate inventory and automation variables from approved inputs and owned mappings.
+5. Use one common lifecycle for Windows and Linux, with small platform-specific profiles.
+6. Isolate VMware, IPAM, object storage, and other systems behind integration adapters.
+7. Run tested Ansible content in a repeatable execution environment.
+8. Retain final evidence showing origination, build results, reconciliation, and handoff success.
 
-- define a contract
-- validate it
-- generate normalized automation inputs
-- run automation against a controlled toolchain
-- simulate an external integration before wiring real infrastructure
+The contract catalog defines stable rules and interfaces. A build manifest is the instance-level desired-state and tracking record for one server. Object storage retains manifests, versions, events, and evidence. The workflow engine or request system still owns active coordination.
 
-## What is in this repo
-
-- [docs/poc-overview.md](docs/poc-overview.md) - scope, objectives, assumptions, and phased build-out
-- [docs/architecture.md](docs/architecture.md) - architecture and flow from contract to automation
-- [docs/toolchain.md](docs/toolchain.md) - development workflow for local workstations and OpenShift Dev Spaces
-- [docs/reality-check.md](docs/reality-check.md) - what in the current concept is solid, what needs adjustment, and what to prove first
-- [docs/infoblox-simulation.md](docs/infoblox-simulation.md) - practical mock strategy for the IPAM use case without a real target platform
-- [catalog/contracts/customer-360/contract.yaml](catalog/contracts/customer-360/contract.yaml) - example data contract
-- [catalog/contracts/server-build-infoblox/contract.yaml](catalog/contracts/server-build-infoblox/contract.yaml) - example infrastructure contract tied to server provisioning and IP allocation
-- [ansible/README.md](ansible/README.md) - how Ansible development ties into catalog content
-- [ansible/playbooks/mock-infoblox-provision.yml](ansible/playbooks/mock-infoblox-provision.yml) - runnable mock contract-to-provisioning flow
-- [.devfile.yaml](.devfile.yaml) - starter OpenShift Dev Spaces definition
-- [execution-environment/Containerfile](execution-environment/Containerfile) - starter execution environment for consistent automation development
-
-## Intended POC outcome
-
-The POC should answer these questions:
-
-- What does a useful internal data contract look like?
-- What metadata should be authoritative in the catalog?
-- Which parts of the contract should drive automation generation or policy checks?
-- What is the minimum development toolchain needed to safely build and test AAP automation around those contracts?
-- Where are the architecture and governance gaps before production rollout?
-
-## Public repository note
-
-The examples in this repository are intentionally sanitized:
-
-- no internal organization names
-- no production endpoints
-- no private datasets
-- mock infrastructure payloads only
-
-Vendor and open-source product names are used only to illustrate generally applicable patterns.
-
-## Repository structure
+## Primary test case
 
 ```text
-catalog/
-  contracts/
-docs/
-ansible/
-  playbooks/
-  roles/
-  vars/
-execution-environment/
-simulations/
+request approved -> manifest created -> readiness assessment
+                 -> VMware provisioning -> OS-specific configuration
+                 -> IPAM/DNS and operational integrations
+                 -> observed-state reconciliation -> handoff snapshot
 ```
 
-## Quick start
+The same flow applies to Windows and Linux as far as practical. VMware is the primary infrastructure adapter and Infoblox is the first network integration adapter.
 
-Use the mock provisioning flow as the first runnable demo.
+See [docs/server-build-poc.md](docs/server-build-poc.md) for the scenario and acceptance criteria.
+
+## Artifact and state model
+
+- **Contract definition** - fields, ownership, mappings, readiness gates, interfaces, and compatibility.
+- **Build manifest** - approved intent, current phase, blockers, desired values, and provenance for one server.
+- **Event/evidence artifacts** - append-only results from provisioning, validation, reconciliation, and handoff.
+- **CMDB discovery** - observed operational state after infrastructure exists; it is not expected to create the pre-build record in this POC.
+
+For production, an on-premises S3-compatible service is a strong candidate for durable artifacts. It is not assumed to be a transactional workflow database. See [docs/object-storage-artifacts.md](docs/object-storage-artifacts.md).
+
+## Current state
+
+The repository contains:
+
+- a common server-build contract
+- Windows and Linux build-manifest examples
+- complete and intentionally blocked scenarios
+- a mocked Infoblox variable-generation and allocation slice
+- a starter execution environment and OpenShift Dev Spaces definition
+- architecture, maturity, and object-storage guidance
+
+Manifest creation from an approved request event is now implemented. The next slice is stage-specific readiness assessment and pause/resume updates.
+
+## Repository guide
+
+- [docs/poc-overview.md](docs/poc-overview.md) - scope, outcomes, and maturity stages
+- [docs/server-build-poc.md](docs/server-build-poc.md) - Windows/Linux VMware test case
+- [docs/architecture.md](docs/architecture.md) - state, artifact, adapter, and handoff boundaries
+- [docs/process-views.md](docs/process-views.md) - complementary Mermaid views for leadership, architecture, and development discussions
+- [docs/roadmap.md](docs/roadmap.md) - maturity path and recommended next milestone
+- [docs/object-storage-artifacts.md](docs/object-storage-artifacts.md) - S3-compatible artifact design and evaluation case
+- [docs/toolchain.md](docs/toolchain.md) - local, Dev Spaces, CI, and AAP development flow
+- [docs/reality-check.md](docs/reality-check.md) - grounded patterns, limitations, gaps, and first steps
+- [docs/infoblox-simulation.md](docs/infoblox-simulation.md) - mock IPAM strategy
+- [catalog/contracts/server-build/contract.yaml](catalog/contracts/server-build/contract.yaml) - common Windows/Linux build contract
+- [catalog/contracts/server-build-infoblox/contract.yaml](catalog/contracts/server-build-infoblox/contract.yaml) - IPAM integration contract
+- [catalog/mappings/server-build-defaults.yaml](catalog/mappings/server-build-defaults.yaml) - synthetic build, OS, placement, and inventory mappings
+- [catalog/request-events/examples/](catalog/request-events/examples/) - synthetic approved-request events
+- [catalog/build-manifests/examples/](catalog/build-manifests/examples/) - synthetic request instances
+- [ansible/playbooks/mock-infoblox-provision.yml](ansible/playbooks/mock-infoblox-provision.yml) - current runnable mock slice
+
+## Current mock quick start
+
+Create a Windows manifest from the default approved event:
+
+```bash
+cd ansible
+ansible-playbook playbooks/create-build-manifest.yml
+```
+
+Create a Linux manifest:
+
+```bash
+cd ansible
+ansible-playbook playbooks/create-build-manifest.yml \
+  -e approved_event_name=linux-request-approved.yaml
+```
+
+Run the manifest creation, duplicate-event, Windows/Linux, and invalid-profile tests:
+
+```bash
+cd ansible
+ansible-playbook playbooks/test-manifest-creation.yml
+```
+
+The fixture relationships can also be checked from a Windows-native Python shell:
+
+```bash
+python scripts/validate_manifest_fixtures.py
+```
+
+The local artifact layout mirrors the proposed object-store keys under `ansible/generated-vars/server-builds/`.
+
+Run the existing IPAM mock:
 
 With Ansible installed:
 
@@ -85,36 +124,24 @@ cd ansible
 ansible-playbook playbooks/mock-infoblox-provision.yml -e @vars/request-good.yml
 ```
 
-With ansible-navigator:
+With `ansible-navigator` and an execution environment:
 
 ```bash
 cd ansible
 ansible-navigator run playbooks/mock-infoblox-provision.yml -e @vars/request-good.yml --mode stdout
 ```
 
-Expected output artifacts:
+## Scope guardrails
 
-- `ansible/generated-vars/<request_id>-contract-vars.yml`
-- `ansible/generated-vars/<request_id>-host-record.json`
+The first maturity target does not require:
 
-## Recommended next steps
+- a catalog portal or custom user interface
+- a production policy engine
+- write access to the CMDB
+- production VMware, Infoblox, Windows, Linux, ITSM, or object-storage connectivity
+- enterprise-wide workflow orchestration
+- every automation group to adopt a collection on day one
 
-1. Replace the sample contract with one real internal use case.
-2. Add your architecture documents into `docs/input/`.
-3. Refine the metadata model based on those documents.
-4. Decide whether the first automation target is:
-   - validation only,
-   - inventory/config generation,
-   - or AAP job template provisioning.
-5. Add a thin validation pipeline once the contract shape is stable.
-6. Use the IPAM simulation path to prove the contract-to-automation flow before attempting real API integration.
+## Public repository note
 
-## Current runnable demo path
-
-The current repo can now demonstrate:
-
-- contract-driven input validation
-- derived zone-token generation
-- normalized vars generation for automation consumption
-- mocked IPAM subnet lookup and IP allocation
-- mock host-record payload generation
+All examples are synthetic. The repository contains no internal organization names, production endpoints, credentials, private datasets, or real server records.

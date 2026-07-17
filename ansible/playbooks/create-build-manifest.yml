@@ -1,0 +1,38 @@
+---
+- name: Create a server-build manifest from an approved request event
+  hosts: localhost
+  gather_facts: false
+  vars:
+    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build/contract.yaml"
+    mapping_file: "{{ playbook_dir }}/../../catalog/mappings/server-build-defaults.yaml"
+    approved_event_name: windows-request-approved.yaml
+    approved_event_file: >-
+      {{ playbook_dir }}/../../catalog/request-events/examples/{{ approved_event_name }}
+    artifact_root: "{{ playbook_dir }}/../generated-vars/server-builds"
+  pre_tasks:
+    - name: Load common server-build contract
+      ansible.builtin.include_vars:
+        file: "{{ contract_file }}"
+        name: active_contract
+
+    - name: Load server-build mappings
+      ansible.builtin.include_vars:
+        file: "{{ mapping_file }}"
+        name: active_mapping
+
+    - name: Load approved request event
+      ansible.builtin.include_vars:
+        file: "{{ approved_event_file }}"
+        name: approved_event
+
+  roles:
+    - role: manifest_create
+      manifest_create_contract: "{{ active_contract }}"
+      manifest_create_mapping: "{{ active_mapping }}"
+      manifest_create_event: "{{ approved_event }}"
+      manifest_create_artifact_root: "{{ artifact_root }}"
+
+  post_tasks:
+    - name: Show manifest creation result
+      ansible.builtin.debug:
+        var: manifest_create_result

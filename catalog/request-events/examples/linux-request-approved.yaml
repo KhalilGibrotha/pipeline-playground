@@ -1,0 +1,23 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: ApprovedServerRequestEvent
+metadata:
+  event_id: EVT-DEMO-0003
+  occurred_at: "2026-01-16T14:30:00Z"
+  source: request-system
+spec:
+  request:
+    request_id: REQ-DEMO-0003
+    source_reference: request-system/REQ-DEMO-0003
+  approval:
+    approval_reference: APR-DEMO-0003
+    approved_at: "2026-01-16T14:29:30Z"
+  requested_build:
+    application_id: APP-DEMO-03
+    environment: test
+    hostname: lin-demo-001.example.test
+    os_family: linux
+    os_version: rhel-9
+    build_profile: small
+    site: lab
+    network_profile: test-application
+    service_owner: example-service-owner

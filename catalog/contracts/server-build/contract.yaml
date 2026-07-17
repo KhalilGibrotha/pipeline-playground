@@ -1,0 +1,219 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationContract
+metadata:
+  name: server-build
+  domain: server-provisioning
+  owner: infrastructure-platform@example.test
+  steward: automation-engineering@example.test
+  version: 0.2.0
+  status: draft
+  classification: synthetic
+spec:
+  description: >-
+    Common POC contract for Windows and Linux server-build readiness,
+    VMware provisioning, integrations, evidence, and handoff.
+  authoritativeMappings:
+    serverBuildDefaults: ../../mappings/server-build-defaults.yaml
+  manifestCreation:
+    trigger: request-approved
+    requiredSourceEvidence:
+      - request.request_id
+      - approval.approval_reference
+      - approval.approved_at
+    initialPhase: approved
+  supportedPlatforms:
+    windows:
+      osVersions:
+        - windows-server-2022
+        - windows-server-2025
+      configurationAdapter: windows-base
+      connectionProfile: winrm
+    linux:
+      osVersions:
+        - rhel-9
+        - rhel-10
+      configurationAdapter: linux-base
+      connectionProfile: ssh
+  lifecycle:
+    phases:
+      - approved
+      - manifest-created
+      - base-build-ready
+      - infrastructure-provisioned
+      - network-integration-ready
+      - os-configured
+      - operational-validation
+      - handoff-complete
+    pauseState: blocked
+    terminalStates:
+      - handoff-complete
+      - cancelled
+      - expired
+  readinessGates:
+    manifestCreation:
+      requiredInputs:
+        - request.request_id
+        - approval.approval_reference
+        - approval.approved_at
+        - build.os_family
+      outcome: manifest-created
+    baseBuild:
+      requiredInputs:
+        - application.application_id
+        - application.environment
+        - build.hostname
+        - build.os_version
+        - build.cpu_count
+        - build.memory_gb
+        - virtualization.provider
+        - virtualization.template
+        - placement.site
+        - placement.compute_cluster
+        - placement.storage_policy
+      outcome: base-build-ready
+    networkIntegration:
+      requiredInputs:
+        - integrations.ipam.network_profile
+        - integrations.ipam.dns_domain
+      contractRef: ../server-build-infoblox/contract.yaml
+      outcome: network-integration-ready
+    handoff:
+      requiredInputs:
+        - operations.service_owner
+        - operations.support_group
+        - operations.monitoring_profile
+        - operations.backup_profile
+      requiredEvidence:
+        - approval_snapshot
+        - vmware_provision_result
+        - network_result
+        - os_configuration_result
+        - observed_state_reconciliation
+        - verification_result
+      outcome: handoff-complete
+  inputs:
+    request.request_id:
+      type: string
+      source: request-system
+      decisionOwner: intake-owner
+    approval.approval_reference:
+      type: string
+      source: request-system
+      decisionOwner: approval-process-owner
+    approval.approved_at:
+      type: string
+      format: date-time
+      source: request-system
+      decisionOwner: approval-process-owner
+    application.application_id:
+      type: string
+      source: application-record
+      decisionOwner: application-owner
+    application.environment:
+      type: string
+      source: application-record
+      decisionOwner: application-owner
+      allowedValues:
+        - dev
+        - test
+        - qa
+        - prod
+    build.hostname:
+      type: string
+      source: naming-service-or-request-system
+      decisionOwner: infrastructure-platform
+    build.os_family:
+      type: string
+      source: approved-request
+      decisionOwner: application-owner
+      allowedValues:
+        - windows
+        - linux
+    build.os_version:
+      type: string
+      source: platform-profile
+      decisionOwner: operating-system-platform
+    build.cpu_count:
+      type: integer
+      source: approved-build-profile
+      decisionOwner: compute-platform
+    build.memory_gb:
+      type: integer
+      source: approved-build-profile
+      decisionOwner: compute-platform
+    virtualization.provider:
+      type: string
+      source: platform-standard
+      decisionOwner: virtualization-platform
+      allowedValues:
+        - vmware
+    virtualization.template:
+      type: string
+      source: approved-template-catalog
+      decisionOwner: operating-system-platform
+    placement.site:
+      type: string
+      source: placement-mapping
+      decisionOwner: virtualization-platform
+      allowedValues:
+        - lab
+        - site-a
+        - site-b
+    placement.compute_cluster:
+      type: string
+      source: placement-mapping
+      decisionOwner: virtualization-platform
+    placement.storage_policy:
+      type: string
+      source: placement-mapping
+      decisionOwner: virtualization-platform
+    integrations.ipam.network_profile:
+      type: string
+      source: network-mapping
+      decisionOwner: network-platform
+    integrations.ipam.dns_domain:
+      type: string
+      source: network-mapping
+      decisionOwner: network-platform
+    operations.service_owner:
+      type: string
+      source: application-record
+      decisionOwner: application-owner
+    operations.support_group:
+      type: string
+      source: support-model
+      decisionOwner: service-management
+    operations.monitoring_profile:
+      type: string
+      source: operational-standard
+      decisionOwner: monitoring-platform
+    operations.backup_profile:
+      type: string
+      source: operational-standard
+      decisionOwner: backup-platform
+  stateModel:
+    desiredStateSource: build-manifest
+    virtualizationObservedStateSource: vmware
+    operationalObservedStateSource: discovery-cmdb
+    reconciliationRequiredForHandoff: true
+  artifactRetention:
+    preferredStore: s3-compatible-object-storage
+    manifestVersioningRequired: true
+    appendOnlyEventsPreferred: true
+    finalHandoffSnapshotRequired: true
+  generatedOutputs:
+    - normalized_inventory
+    - normalized_variables
+    - readiness_report
+    - lifecycle_event
+    - build_evidence
+    - observed_state_reconciliation
+    - handoff_snapshot
+  automation:
+    ansible:
+      executionEnvironmentRequired: true
+      mockIntegrationsSupported: true
+      virtualizationProvider: vmware
+      targetPlatforms:
+        - windows
+        - linux

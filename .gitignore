@@ -1,2 +1,4 @@
 ansible/generated-vars/
 *.retry
+__pycache__/
+*.pyc

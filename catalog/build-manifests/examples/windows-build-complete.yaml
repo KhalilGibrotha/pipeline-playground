@@ -1,0 +1,55 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: BuildManifest
+metadata:
+  name: build-req-demo-0001
+  contract: server-build@0.2.0
+  createdAt: "2026-01-15T14:30:00Z"
+  createdBy: approved-request-event
+  revision: 1
+  artifactKey: server-builds/requests/REQ-DEMO-0001/manifest.yaml
+status:
+  phase: approved
+  outcome: pending-readiness-assessment
+spec:
+  request:
+    request_id: REQ-DEMO-0001
+    source_reference: request-system/REQ-DEMO-0001
+  approval:
+    approval_reference: APR-DEMO-0001
+    approved_at: "2026-01-15T14:29:30Z"
+  application:
+    application_id: APP-DEMO-01
+    environment: test
+  build:
+    hostname: win-demo-001.example.test
+    os_family: windows
+    os_version: windows-server-2022
+    cpu_count: 2
+    memory_gb: 8
+  virtualization:
+    provider: vmware
+    template: windows-2022-standard-demo
+  placement:
+    site: lab
+    compute_cluster: cluster-demo-a
+    storage_policy: standard-demo
+  integrations:
+    ipam:
+      network_profile: test-application
+      dns_domain: example.test
+  operations:
+    service_owner: example-service-owner
+    support_group: example-windows-support
+    monitoring_profile: standard-test
+    backup_profile: standard-test
+  derived:
+    inventory_groups:
+      - windows_managed
+      - site_lab
+      - env_test
+    connection_profile: winrm
+  provenance:
+    request_snapshot: artifacts/approval/request-snapshot.yaml
+    contract_version: server-build@0.2.0
+    mapping_version: server-build-defaults@0.1.0
+    source_event: EVT-DEMO-0001

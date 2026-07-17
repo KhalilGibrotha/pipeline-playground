@@ -3,8 +3,8 @@ kind: InfrastructureContract
 metadata:
   name: server-build-infoblox
   domain: provisioning
-  owner: infrastructure-architecture@example.com
-  steward: automation-engineering@example.com
+  owner: infrastructure-architecture@example.test
+  steward: automation-engineering@example.test
   version: 0.1.0
   status: draft
   classification: internal
@@ -42,7 +42,7 @@ spec:
       source: build-request
     zta_classification:
       type: string
-      source: security-policy
+      source: classification-policy
       allowedValues:
         - public
         - internal
@@ -51,7 +51,7 @@ spec:
         - management
     zta_environment:
       type: string
-      source: security-policy
+      source: classification-policy
       allowedValues:
         - prod
         - preprod
@@ -60,7 +60,7 @@ spec:
         - dev
     zta_exposure:
       type: string
-      source: security-policy
+      source: classification-policy
       allowedValues:
         - core
         - external
