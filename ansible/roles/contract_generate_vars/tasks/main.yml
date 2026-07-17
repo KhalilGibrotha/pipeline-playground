@@ -1,0 +1,28 @@
+---
+- name: Build normalized contract vars
+  ansible.builtin.set_fact:
+    generated_contract_vars:
+      request:
+        request_id: "{{ request_id }}"
+        enterprise_app_id: "{{ enterprise_app_id }}"
+        hostname: "{{ hostname }}"
+        datacenter: "{{ datacenter }}"
+        is_zta: "{{ is_zta }}"
+      classification:
+        zta_classification: "{{ zta_classification }}"
+        zta_environment: "{{ zta_environment }}"
+        zta_exposure: "{{ zta_exposure }}"
+      derived:
+        ea_microsegment_id: "{{ ea_microsegment_id | default('') }}"
+      outputs:
+        app_sdlc_environment: "{{ app_sdlc_environment | default('') }}"
+
+- name: Set generated vars file path
+  ansible.builtin.set_fact:
+    generated_vars_file: "{{ generated_vars_dir }}/{{ request_id }}-contract-vars.yml"
+
+- name: Write normalized contract vars artifact
+  ansible.builtin.copy:
+    dest: "{{ generated_vars_file }}"
+    content: "{{ generated_contract_vars | to_nice_yaml }}"
+    mode: "0644"

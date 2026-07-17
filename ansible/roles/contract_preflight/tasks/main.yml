@@ -1,0 +1,40 @@
+---
+- name: Assert required inputs are present
+  ansible.builtin.assert:
+    that:
+      - lookup('ansible.builtin.vars', item, default='') | string | length > 0
+    fail_msg: "Required contract input '{{ item }}' is missing or empty."
+    success_msg: "Required contract input '{{ item }}' is present."
+  loop: "{{ active_contract.spec.requiredInputs }}"
+
+- name: Assert datacenter is allowed
+  ansible.builtin.assert:
+    that:
+      - datacenter in active_contract.spec.inputs.datacenter.allowedValues
+    fail_msg: "datacenter '{{ datacenter }}' is not allowed."
+
+- name: Assert zta classification is allowed
+  ansible.builtin.assert:
+    that:
+      - zta_classification in active_contract.spec.inputs.zta_classification.allowedValues
+    fail_msg: "zta_classification '{{ zta_classification }}' is not allowed."
+  when: is_zta | bool
+
+- name: Assert zta environment is allowed
+  ansible.builtin.assert:
+    that:
+      - zta_environment in active_contract.spec.inputs.zta_environment.allowedValues
+    fail_msg: "zta_environment '{{ zta_environment }}' is not allowed."
+  when: is_zta | bool
+
+- name: Assert zta exposure is allowed
+  ansible.builtin.assert:
+    that:
+      - zta_exposure in active_contract.spec.inputs.zta_exposure.allowedValues
+    fail_msg: "zta_exposure '{{ zta_exposure }}' is not allowed."
+  when: is_zta | bool
+
+- name: Derive zone token
+  ansible.builtin.set_fact:
+    ea_microsegment_id: "zone_{{ zta_environment | lower }}_{{ zta_classification | lower }}_{{ zta_exposure | lower }}"
+  when: is_zta | bool

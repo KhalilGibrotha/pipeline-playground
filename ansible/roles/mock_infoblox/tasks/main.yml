@@ -1,0 +1,70 @@
+---
+- name: Load mock subnet query response
+  ansible.builtin.set_fact:
+    subnet_query_response: "{{ lookup('ansible.builtin.file', infoblox_mock_dir + '/subnet-query-response.json') | from_json }}"
+
+- name: Filter candidate subnets by zone and datacenter
+  ansible.builtin.set_fact:
+    candidate_subnets: >-
+      {{
+        subnet_query_response.result
+        | selectattr('extattrs.Zone.value', 'equalto', ea_microsegment_id)
+        | selectattr('extattrs.Site.value', 'equalto', datacenter)
+        | selectattr('extattrs.allocation_pool.value', 'equalto', 'Yes')
+        | selectattr('extattrs.status.value', 'equalto', 'Active')
+        | list
+      }}
+  when: is_zta | bool
+
+- name: Assert exactly one eligible subnet is selected for the mock
+  ansible.builtin.assert:
+    that:
+      - candidate_subnets | length == 1
+    fail_msg: >-
+      Expected exactly one eligible subnet for zone '{{ ea_microsegment_id }}' and datacenter '{{ datacenter }}'
+      but found {{ candidate_subnets | length }}.
+    success_msg: Eligible subnet selected.
+  when: is_zta | bool
+
+- name: Set selected subnet
+  ansible.builtin.set_fact:
+    selected_subnet: "{{ candidate_subnets | first }}"
+  when: is_zta | bool
+
+- name: Load mock next available IP response
+  ansible.builtin.set_fact:
+    next_available_ip_response: "{{ lookup('ansible.builtin.file', infoblox_mock_dir + '/next-available-ip-response.json') | from_json }}"
+  when: is_zta | bool
+
+- name: Set allocated IP
+  ansible.builtin.set_fact:
+    allocated_ip: "{{ next_available_ip_response.ips | first }}"
+  when: is_zta | bool
+
+- name: Build mock host record payload
+  ansible.builtin.set_fact:
+    host_record_payload:
+      name: "{{ hostname }}"
+      ipv4addrs:
+        - ipv4addr: "{{ allocated_ip }}"
+      extattrs:
+        Zone:
+          value: "{{ ea_microsegment_id }}"
+        Application:
+          value: "{{ enterprise_app_id }}"
+        RequestID:
+          value: "{{ request_id }}"
+        DataClassification:
+          value: "{{ zta_classification }}"
+        aap_managed:
+          value: "true"
+        app_sdlc_environment:
+          value: "{{ app_sdlc_environment | default('') }}"
+  when: is_zta | bool
+
+- name: Write mock host record payload artifact
+  ansible.builtin.copy:
+    dest: "{{ generated_vars_dir }}/{{ request_id }}-host-record.json"
+    content: "{{ host_record_payload | to_nice_json }}"
+    mode: "0644"
+  when: is_zta | bool

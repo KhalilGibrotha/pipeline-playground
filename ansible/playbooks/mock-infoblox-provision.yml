@@ -1,0 +1,35 @@
+---
+- name: Mock provisioning flow from contract to Infoblox payload
+  hosts: localhost
+  gather_facts: false
+  vars:
+    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build-infoblox/contract.yaml"
+    infoblox_mock_dir: "{{ playbook_dir }}/../../simulations/infoblox"
+    generated_vars_dir: "{{ playbook_dir }}/../generated-vars"
+  pre_tasks:
+    - name: Load infrastructure contract
+      ansible.builtin.include_vars:
+        file: "{{ contract_file }}"
+        name: active_contract
+
+    - name: Ensure generated vars directory exists
+      ansible.builtin.file:
+        path: "{{ generated_vars_dir }}"
+        state: directory
+        mode: "0755"
+
+  roles:
+    - role: contract_preflight
+    - role: contract_generate_vars
+    - role: mock_infoblox
+
+  post_tasks:
+    - name: Show mock provisioning summary
+      ansible.builtin.debug:
+        msg:
+          request_id: "{{ request_id }}"
+          hostname: "{{ hostname }}"
+          zone_token: "{{ ea_microsegment_id }}"
+          selected_subnet: "{{ selected_subnet.network }}"
+          allocated_ip: "{{ allocated_ip }}"
+          generated_vars_file: "{{ generated_vars_file }}"

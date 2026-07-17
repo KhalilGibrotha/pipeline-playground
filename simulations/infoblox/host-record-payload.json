@@ -1,0 +1,28 @@
+{
+  "name": "srv-demo-001.example.test",
+  "ipv4addrs": [
+    {
+      "ipv4addr": "10.10.10.42"
+    }
+  ],
+  "extattrs": {
+    "Zone": {
+      "value": "zone_prod_internal_core"
+    },
+    "Application": {
+      "value": "APP12345"
+    },
+    "RequestID": {
+      "value": "REQ0001234"
+    },
+    "DataClassification": {
+      "value": "internal"
+    },
+    "aap_managed": {
+      "value": "true"
+    },
+    "app_sdlc_environment": {
+      "value": "production"
+    }
+  }
+}

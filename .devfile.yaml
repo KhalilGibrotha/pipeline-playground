@@ -1,0 +1,30 @@
+schemaVersion: 2.2.0
+metadata:
+  name: data-contract-catalog-poc
+components:
+  - name: tools
+    container:
+      image: quay.io/devfile/universal-developer-image:ubi9-latest
+      memoryLimit: 4Gi
+      mountSources: true
+      endpoints:
+        - name: docs
+          targetPort: 8080
+commands:
+  - id: install-tooling
+    exec:
+      component: tools
+      commandLine: >-
+        python3 -m pip install --user ansible-core ansible-dev-tools ansible-lint yamllint jmespath jsonschema
+      workingDir: ${PROJECT_SOURCE}
+  - id: show-versions
+    exec:
+      component: tools
+      commandLine: >-
+        bash -lc "ansible --version && ansible-lint --version && yamllint --version"
+      workingDir: ${PROJECT_SOURCE}
+  - id: shell
+    exec:
+      component: tools
+      commandLine: bash
+      workingDir: ${PROJECT_SOURCE}

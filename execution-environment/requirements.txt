@@ -1,0 +1,6 @@
+ansible-core
+ansible-dev-tools
+ansible-lint
+yamllint
+jmespath
+jsonschema

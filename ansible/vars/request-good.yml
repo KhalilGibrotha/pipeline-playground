@@ -1,0 +1,9 @@
+request_id: REQ0001234
+enterprise_app_id: APP12345
+hostname: srv-demo-001.example.test
+datacenter: rtp
+is_zta: true
+zta_classification: internal
+zta_environment: prod
+zta_exposure: core
+app_sdlc_environment: production

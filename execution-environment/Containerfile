@@ -1,0 +1,10 @@
+FROM quay.io/ansible/creator-ee:latest
+
+USER root
+
+RUN python3 -m pip install --no-cache-dir \
+    yamllint \
+    jmespath \
+    jsonschema
+
+USER 1000
