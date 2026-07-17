@@ -93,8 +93,8 @@ S3-compatible artifact adapter.
   problem framing, data contracts as code, the build manifest, the logical AAP
   workflow, proven outcomes, and a focused pilot decision.
 - [Engineering walkthrough](outputs/pipeline-playground-engineering-demo.pptx) -
-  repository layers, lifecycle roles, workflow nodes, testing gates, demo
-  sequence, and the next S3-compatible adapter increment.
+  repository layers, lifecycle roles, workflow nodes, testing gates, test
+  responsibilities, and the next S3-compatible adapter increment.
 
 ## Current mock quick start
 

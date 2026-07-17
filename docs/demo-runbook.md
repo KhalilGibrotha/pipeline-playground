@@ -2,9 +2,9 @@
 
 This runbook supports a short engineering demonstration of the POC. The
 leadership overview establishes the why; the engineering walkthrough supplies
-the implementation and demo sequence. The goal is to show working evidence for
-a contained automation-development pattern, not to simulate a finished
-enterprise platform.
+the implementation and test model. This runbook supplies the presenter
+sequence. The goal is to show working evidence for a contained
+automation-development pattern, not to simulate a finished enterprise platform.
 
 ## Audience takeaway
 
