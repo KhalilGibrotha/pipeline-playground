@@ -1,8 +1,10 @@
 # Pipeline Playground demo runbook
 
-This runbook supports a short leadership-oriented demonstration of the POC.
-The goal is to show working evidence for a contained automation-development
-pattern, not to simulate a finished enterprise platform.
+This runbook supports a short engineering demonstration of the POC. The
+leadership overview establishes the why; the engineering walkthrough supplies
+the implementation and demo sequence. The goal is to show working evidence for
+a contained automation-development pattern, not to simulate a finished
+enterprise platform.
 
 ## Audience takeaway
 
@@ -15,13 +17,15 @@ work traceable and safely resumable.
 
 ### 1. Establish the operational problem
 
-Use slides 1 and 2 of the leadership brief.
+Use slides 1 and 2 of the leadership overview.
 
 - approved requests can arrive before all downstream data exists
 - build intent is fragmented across tickets, CSV files, shares, and inventory
 - developers and handoff teams compensate for missing ownership and provenance
 
 ### 2. Show the approved request and contract
+
+Use slide 3 of the engineering walkthrough.
 
 Open these synthetic examples:
 
@@ -55,6 +59,8 @@ Show approval provenance, VMware placement, platform profile, derived inventory,
 and the lifecycle status.
 
 ### 4. Demonstrate controlled failure and redelivery
+
+Use slides 4 and 5 of the engineering walkthrough.
 
 Run the blocked-to-ready lifecycle regression:
 
@@ -96,6 +102,8 @@ unexpected test error.
 
 ### 5. Show the development quality gate
 
+Use slide 7 of the engineering walkthrough.
+
 Run one representative role scenario:
 
 ```powershell
@@ -112,7 +120,8 @@ equivalent Molecule scenario.
 
 ### 6. Connect the evidence to the roadmap
 
-Use slides 4 through 8.
+Use leadership overview slides 4 through 8 to reconnect the evidence to the
+operating model and pilot decision.
 
 - AAP should execute short phases; it should not remain alive while people
   supply missing data.
@@ -128,6 +137,11 @@ Use slides 4 through 8.
 - local image `localhost/pipeline-playground-ee:dev`
 - repository checked out with synthetic fixtures
 - PowerPoint brief available under `outputs/`
+
+The preferred presentation assets are:
+
+- `outputs/pipeline-playground-leadership-brief.pptx`
+- `outputs/pipeline-playground-engineering-demo.pptx`
 
 Build the local image when needed:
 

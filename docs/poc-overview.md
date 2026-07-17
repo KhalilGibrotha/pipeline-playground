@@ -6,6 +6,39 @@ Prove an achievable development and delivery pattern for modular Ansible automat
 
 The data contract catalog records stable definitions that teams need to share. A manifest created at request approval retains desired values and tracks one build through pauses, integrations, reconciliation, and handoff.
 
+## Leadership primer
+
+### Data contracts as code
+
+A data contract is a versioned agreement about the information automation may
+trust. It defines valid fields, accountable owners and sources, compatibility,
+and which values are required at each phase.
+
+Keeping the contract in source control makes changes reviewable and testable.
+It reduces developer guesswork, makes integration handoffs explicit, and
+creates a stable interface for reusable automation.
+
+### Build manifest
+
+A build manifest is the durable tracking record for one approved server
+request. It preserves the original intent, current phase, missing information,
+next owner, resume point, and evidence references.
+
+The manifest makes waiting visible and allows a build to stop safely instead of
+holding an AAP job open while people gather data. It also preserves pre-build
+intent that a discovery-only CMDB cannot observe.
+
+### AAP workflow
+
+AAP coordinates short jobs: load the current manifest, assess readiness,
+execute one phase, and persist the result. If a required value is missing, the
+workflow records a controlled blocked state and exits. A later request event,
+webhook, or schedule launches the next short run from the retained revision.
+
+The contract defines the rules, the manifest carries state and evidence, AAP
+coordinates execution, and the CMDB continues to represent discovered
+operational state.
+
 ## Problems to solve
 
 1. Integration and build data cannot be discovered or tracked consistently.

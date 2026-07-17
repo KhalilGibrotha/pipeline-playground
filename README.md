@@ -73,7 +73,8 @@ S3-compatible artifact adapter.
 - [docs/server-build-poc.md](docs/server-build-poc.md) - Windows/Linux VMware test case
 - [docs/architecture.md](docs/architecture.md) - state, artifact, adapter, and handoff boundaries
 - [docs/process-views.md](docs/process-views.md) - complementary Mermaid views for leadership, architecture, and development discussions
-- [docs/demo-runbook.md](docs/demo-runbook.md) - ten-minute leadership demonstration and reusable concept-lab pattern
+- [docs/demo-runbook.md](docs/demo-runbook.md) - ten-minute engineering demonstration and reusable concept-lab pattern
+- [docs/resources.md](docs/resources.md) - curated Red Hat, Ansible, workflow, testing, integration, and contract references
 - [docs/roadmap.md](docs/roadmap.md) - maturity path and recommended next milestone
 - [docs/object-storage-artifacts.md](docs/object-storage-artifacts.md) - S3-compatible artifact design and evaluation case
 - [docs/toolchain.md](docs/toolchain.md) - local, Dev Spaces, CI, and AAP development flow
@@ -85,6 +86,15 @@ S3-compatible artifact adapter.
 - [catalog/request-events/examples/](catalog/request-events/examples/) - synthetic approved-request events
 - [catalog/build-manifests/examples/](catalog/build-manifests/examples/) - synthetic request instances
 - [ansible/playbooks/mock-infoblox-provision.yml](ansible/playbooks/mock-infoblox-provision.yml) - current runnable mock slice
+
+## Presentation assets
+
+- [Leadership overview](outputs/pipeline-playground-leadership-brief.pptx) -
+  problem framing, data contracts as code, the build manifest, the logical AAP
+  workflow, proven outcomes, and a focused pilot decision.
+- [Engineering walkthrough](outputs/pipeline-playground-engineering-demo.pptx) -
+  repository layers, lifecycle roles, workflow nodes, testing gates, demo
+  sequence, and the next S3-compatible adapter increment.
 
 ## Current mock quick start
 

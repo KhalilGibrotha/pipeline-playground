@@ -141,3 +141,24 @@ flowchart LR
 ```
 
 Local Podman, CI, and AAP should consume the same dependency and content definitions even when credentials and target access differ.
+
+## 6. AAP workflow view: one short build phase
+
+This is the logical controller-level shape for a single phase. Job templates
+remain small and reusable. The workflow branches on readiness, persists a
+durable artifact, and exits rather than waiting for a human input.
+
+```mermaid
+flowchart LR
+    T["Request API, EDA event, or schedule"] --> A["JT: load manifest"]
+    A --> B["JT: assess readiness"]
+    B -->|ready| C["JT: execute current adapter"]
+    C --> D["JT: persist revision, event, and evidence"]
+    B -->|blocked| E["JT: record blocker, owner, and resume phase"]
+    E --> F["Controlled successful exit"]
+    D --> G["Short workflow completes"]
+    G -. "next event or reconciliation schedule" .-> A
+```
+
+Workflow success, failure, and always paths coordinate the jobs. They do not
+replace the manifest and lifecycle events as the portable record of state.
