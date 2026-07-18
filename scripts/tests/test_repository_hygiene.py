@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -33,8 +34,14 @@ class RepositoryHygieneTests(unittest.TestCase):
         self.assertEqual([finding.rule for finding in findings], ["blocked-token"])
 
     def test_discovers_checkout_owner_without_storing_the_username(self) -> None:
-        discovered = hygiene.discover_local_identity_hashes()
-        self.assertTrue(discovered)
+        synthetic_identity = "quality-fixture-user"
+        with mock.patch.dict(
+            hygiene.os.environ,
+            {"USER": synthetic_identity, "USERNAME": "", "LOGNAME": ""},
+        ):
+            discovered = hygiene.discover_local_identity_hashes()
+
+        self.assertIn(hygiene.token_digest(synthetic_identity), discovered)
         self.assertTrue(all(len(digest) == 64 for digest in discovered))
 
     def test_blocks_mojibake_and_ai_citation_residue(self) -> None:
