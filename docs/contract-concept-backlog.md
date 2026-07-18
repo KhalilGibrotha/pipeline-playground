@@ -49,6 +49,30 @@ and one Windows enrollment slice. That first removes avoidable latency inside
 the automation boundary, then proves the desired-versus-observed model while
 preserving Windows/Linux parity.
 
+## Architecture-alignment milestone
+
+Before adding the next domain example, the POC will align its contract,
+validation, policy, identity, and presentation patterns. This milestone keeps
+the existing server-build work as a proved baseline while replacing
+POC-specific shortcuts with reusable implementation evidence.
+
+| Order | Backlog item | Completion evidence | Dependency |
+| --- | --- | --- | --- |
+| A1 | Author the generic address-allocation contract in ODCS 3.1 | Valid ODCS source, pinned tool version, synthetic examples, and a short record of any required extensions or standard gaps | server-build POC baseline |
+| A2 | Generate structural enforcement artifacts | Reproducible JSON Schema generation, fixture validation, and a CI drift check that fails when generated artifacts are stale | A1 |
+| A3 | Correct the zero-trust placement inputs | Separate application lifecycle and network-zone environments, add traffic exposure, and derive `zone_<environment>_<classification>_<exposure>` from synthetic enums | A1 |
+| A4 | Separate validation from mapping | Preflight only reads and rejects; a mapping or generation component owns derived values and has success and failure tests | A2, A3 |
+| A5 | Flatten generated automation inputs | Ansible and inventory outputs use flat `snake_case` variables while durable manifests and event documents remain structured | A4 |
+| A6 | Add one cross-field policy gate | A generic OPA/Rego policy has passing and failing fixtures and runs after structural validation in CI | A2, A3 |
+| A7 | Formalize replay, reapproval, and concurrency | Tests cover exact replay, changed-payload identity conflicts, immutable approval evidence, manifest revisions, and conditional concurrent writes | A2 |
+| A8 | Make review artifacts reproducible | Core documents have public-safe metadata and purpose statements; Quarto sources generate editable PowerPoint output from a committed reference template | independent after A1 |
+
+The first implementation slice is A1 through A5: one ODCS-authored
+address-allocation contract becomes a generated schema, accepts corrected
+zero-trust inputs, and emits flat automation variables. A6 and A7 then prove
+policy and lifecycle semantics without expanding into another provider or
+business domain.
+
 ## Candidate 1: discovery-to-AAP inventory supply chain
 
 Do not make the source report an implicit AAP inventory format. Separate:
