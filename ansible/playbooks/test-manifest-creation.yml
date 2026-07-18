@@ -114,6 +114,24 @@
           - manifest_create_document == linux_expected
         fail_msg: Generated Linux manifest did not match the expected deterministic artifact.
 
+    - name: Build an event with unknown platform selectors
+      ansible.builtin.set_fact:
+        manifest_test_unsupported_event: >-
+          {{
+            invalid_event
+            | combine(
+                {
+                  'spec': {
+                    'requested_build': {
+                      'os_family': 'unsupported',
+                      'os_version': 'unsupported-1'
+                    }
+                  }
+                },
+                recursive=true
+              )
+          }}
+
     - name: Verify incompatible OS family and version are rejected
       block:
         - name: Attempt invalid manifest creation
@@ -122,7 +140,7 @@
           vars:
             manifest_create_contract: "{{ active_contract }}"
             manifest_create_mapping: "{{ active_mapping }}"
-            manifest_create_event: "{{ invalid_event }}"
+            manifest_create_event: "{{ manifest_test_unsupported_event }}"
             manifest_create_artifact_root: "{{ manifest_test_tempdir.path }}"
 
         - name: Mark unexpected invalid-event acceptance
@@ -132,11 +150,13 @@
         - name: Mark expected invalid-event rejection
           ansible.builtin.set_fact:
             manifest_test_invalid_rejected: true
+            manifest_test_invalid_failure_message: "{{ ansible_failed_result.msg | default('') }}"
 
     - name: Assert invalid event was rejected
       ansible.builtin.assert:
         that:
           - manifest_test_invalid_rejected | bool
+          - "'Approved request contains an unknown or incompatible' in manifest_test_invalid_failure_message"
         fail_msg: Incompatible OS family and version unexpectedly produced a manifest.
 
   post_tasks:

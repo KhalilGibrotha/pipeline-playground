@@ -31,6 +31,23 @@
           name: linux_waiting_manifest
 
   tasks:
+    - name: Assess manifest creation gate without a blocked safe state
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ windows_waiting_manifest }}"
+        readiness_assess_gate_name: manifestCreation
+        readiness_assess_occurred_at: "2026-01-15T15:00:00Z"
+
+    - name: Verify ready gate uses a safe default
+      ansible.builtin.assert:
+        that:
+          - readiness_assess_report.status.ready | bool
+          - readiness_assess_report.status.safeState == 'not-applicable'
+          - readiness_assess_report.status.blockerCount | int == 0
+        fail_msg: Ready gates without blockedSafeState must produce a valid report.
+
     - name: Assess blocked Windows network readiness
       ansible.builtin.include_role:
         name: readiness_assess
@@ -157,7 +174,7 @@
             name: lifecycle_update
           vars:
             lifecycle_update_contract: "{{ active_contract }}"
-            lifecycle_update_manifest: "{{ readiness_test_windows_resumed_result.manifest }}"
+            lifecycle_update_manifest: "{{ readiness_test_windows_corrected_manifest }}"
             lifecycle_update_readiness_report: "{{ readiness_test_windows_ready_report }}"
             lifecycle_update_expected_revision: 5
             lifecycle_update_event_id: EVT-DEMO-0002-STALE

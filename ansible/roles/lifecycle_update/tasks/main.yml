@@ -39,17 +39,22 @@
     path: "{{ lifecycle_update_event_path }}"
   register: lifecycle_update_event_stat
 
+- name: Check for a stored current manifest
+  ansible.builtin.stat:
+    path: "{{ lifecycle_update_request_root }}/manifest.yaml"
+  register: lifecycle_update_current_manifest_stat
+
 - name: Load existing transition event
   ansible.builtin.include_vars:
     file: "{{ lifecycle_update_event_path }}"
     name: lifecycle_update_existing_event
   when: lifecycle_update_event_stat.stat.exists
 
-- name: Load stored current manifest for duplicate event
+- name: Load stored current manifest
   ansible.builtin.include_vars:
     file: "{{ lifecycle_update_request_root }}/manifest.yaml"
     name: lifecycle_update_existing_manifest
-  when: lifecycle_update_event_stat.stat.exists
+  when: lifecycle_update_current_manifest_stat.stat.exists
 
 - name: Validate duplicate transition identity
   ansible.builtin.assert:
@@ -72,6 +77,19 @@
 - name: Validate fresh revision and lifecycle direction
   when: not lifecycle_update_event_stat.stat.exists
   block:
+    - name: Reject stale persisted manifest state
+      ansible.builtin.assert:
+        that:
+          - >-
+            lifecycle_update_existing_manifest.metadata.revision | int ==
+            lifecycle_update_expected_revision | int
+          - >-
+            lifecycle_update_existing_manifest.spec.request.request_id ==
+            lifecycle_update_manifest.spec.request.request_id
+        fail_msg: >-
+          Stored manifest revision or identity conflicts with the requested transition.
+      when: lifecycle_update_current_manifest_stat.stat.exists
+
     - name: Set lifecycle phase indexes
       ansible.builtin.set_fact:
         lifecycle_update_current_phase_index: >-
@@ -196,6 +214,14 @@
         content: "{{ lifecycle_update_document | to_nice_yaml(indent=2, sort_keys=false) }}"
         mode: "0644"
         force: false
+      register: lifecycle_update_revision_write_result
+
+    - name: Reject a concurrent revision write
+      ansible.builtin.assert:
+        that:
+          - lifecycle_update_revision_write_result.changed
+        fail_msg: >-
+          Target manifest revision already exists; reload current state before retrying.
 
     - name: Write current manifest projection
       ansible.builtin.copy:

@@ -54,11 +54,14 @@
       - manifest_create_network_profile | length > 0
       - manifest_create_platform_operations | length > 0
       - manifest_create_environment_operations | length > 0
-      - manifest_create_os_profile.os_family == manifest_create_requested_build.os_family
+      - (manifest_create_os_profile.os_family | default('')) == manifest_create_requested_build.os_family
       - manifest_create_requested_build.os_family in manifest_create_contract.spec.supportedPlatforms
       - >-
         manifest_create_requested_build.os_version in
-        manifest_create_contract.spec.supportedPlatforms[manifest_create_requested_build.os_family].osVersions
+        (
+          manifest_create_contract.spec.supportedPlatforms[manifest_create_requested_build.os_family]
+          | default({'osVersions': []})
+        ).osVersions
     fail_msg: Approved request contains an unknown or incompatible build, OS, placement, network, or environment profile.
 
 - name: Set manifest artifact locations

@@ -48,6 +48,6 @@
           }}
         currentPhase: "{{ readiness_assess_manifest.status.phase }}"
         resumePhase: "{{ readiness_assess_gate.outcome }}"
-        safeState: "{{ readiness_assess_gate.blockedSafeState }}"
+        safeState: "{{ readiness_assess_gate.blockedSafeState | default('not-applicable') }}"
         blockerCount: "{{ readiness_assess_blockers | length }}"
         blockers: "{{ readiness_assess_blockers }}"
