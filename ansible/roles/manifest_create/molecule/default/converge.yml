@@ -1,0 +1,89 @@
+---
+- name: Exercise manifest creation behavior
+  hosts: all
+  gather_facts: false
+  vars:
+    catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+    scenario_artifact_root: "{{ molecule_ephemeral_directory }}/artifacts"
+
+  pre_tasks:
+    - name: Load scenario inputs
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ catalog_root }}/domains/infrastructure-provisioning/products/server-build/contracts/lifecycle/contract.yaml"
+          name: active_contract
+        - file: "{{ catalog_root }}/domains/infrastructure-provisioning/products/server-build/mappings/server-build-defaults.yaml"
+          name: active_mapping
+        - file: "{{ catalog_root }}/domains/automation-intake/examples/server-requests/windows-request-approved.yaml"
+          name: windows_event
+        - file: "{{ catalog_root }}/domains/automation-intake/examples/server-requests/linux-request-approved.yaml"
+          name: linux_event
+        - file: "{{ catalog_root }}/domains/automation-intake/examples/server-requests/invalid-request-approved.yaml"
+          name: invalid_event
+
+  tasks:
+    - name: Create Windows manifest
+      ansible.builtin.include_role:
+        name: manifest_create
+      vars:
+        manifest_create_contract: "{{ active_contract }}"
+        manifest_create_mapping: "{{ active_mapping }}"
+        manifest_create_event: "{{ windows_event }}"
+        manifest_create_artifact_root: "{{ scenario_artifact_root }}"
+
+    - name: Create Linux manifest
+      ansible.builtin.include_role:
+        name: manifest_create
+      vars:
+        manifest_create_contract: "{{ active_contract }}"
+        manifest_create_mapping: "{{ active_mapping }}"
+        manifest_create_event: "{{ linux_event }}"
+        manifest_create_artifact_root: "{{ scenario_artifact_root }}"
+
+    - name: Build an event with unknown platform selectors
+      ansible.builtin.set_fact:
+        manifest_create_unsupported_event: >-
+          {{
+            invalid_event
+            | combine(
+                {
+                  'spec': {
+                    'requested_build': {
+                      'os_family': 'unsupported',
+                      'os_version': 'unsupported-1'
+                    }
+                  }
+                },
+                recursive=true
+              )
+          }}
+
+    - name: Verify incompatible platform input is rejected
+      block:
+        - name: Attempt invalid manifest creation
+          ansible.builtin.include_role:
+            name: manifest_create
+          vars:
+            manifest_create_contract: "{{ active_contract }}"
+            manifest_create_mapping: "{{ active_mapping }}"
+            manifest_create_event: "{{ manifest_create_unsupported_event }}"
+            manifest_create_artifact_root: "{{ scenario_artifact_root }}"
+
+        - name: Record unexpected acceptance
+          ansible.builtin.set_fact:
+            manifest_create_invalid_event_rejected: false
+
+      rescue:
+        - name: Record expected rejection
+          ansible.builtin.set_fact:
+            manifest_create_invalid_event_rejected: true
+            manifest_create_invalid_failure_message: "{{ ansible_failed_result.msg | default('') }}"
+
+    - name: Assert incompatible platform input was rejected
+      ansible.builtin.assert:
+        that:
+          - manifest_create_invalid_event_rejected | bool
+          - "'Approved request contains an unknown or incompatible' in manifest_create_invalid_failure_message"
+        fail_msg: Incompatible OS family and version unexpectedly produced a manifest.

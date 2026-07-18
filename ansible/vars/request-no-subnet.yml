@@ -1,9 +1,8 @@
 request_id: REQ0001235
-enterprise_app_id: APP12345
+application_id: APP-DEMO-01
 hostname: srv-demo-002.example.test
-datacenter: km
-is_zta: true
-zta_classification: confidential
-zta_environment: prod
-zta_exposure: dmz
-app_sdlc_environment: production
+site: site-b
+network_profile: application-dmz
+application_environment: prod
+data_classification: confidential
+dns_domain: example.test

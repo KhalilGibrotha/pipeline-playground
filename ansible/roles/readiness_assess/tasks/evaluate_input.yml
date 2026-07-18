@@ -1,0 +1,46 @@
+---
+- name: Split required input path
+  ansible.builtin.set_fact:
+    readiness_assess_field_parts: "{{ readiness_assess_required_field.split('.') }}"
+
+- name: Resolve required input value
+  ansible.builtin.set_fact:
+    readiness_assess_candidate_value: >-
+      {%- if readiness_assess_field_parts | length == 2 -%}
+      {{ readiness_assess_manifest.spec
+         [readiness_assess_field_parts[0]]
+         [readiness_assess_field_parts[1]] | default(none) }}
+      {%- elif readiness_assess_field_parts | length == 3 -%}
+      {{ readiness_assess_manifest.spec
+         [readiness_assess_field_parts[0]]
+         [readiness_assess_field_parts[1]]
+         [readiness_assess_field_parts[2]] | default(none) }}
+      {%- else -%}
+      {{ none }}
+      {%- endif -%}
+
+- name: Record missing required input
+  ansible.builtin.set_fact:
+    readiness_assess_blockers: >-
+      {{
+        readiness_assess_blockers
+        + [
+            {
+              'field': readiness_assess_required_field,
+              'kind': 'input',
+              'expectedSource':
+                readiness_assess_contract.spec.inputs
+                [readiness_assess_required_field].source,
+              'decisionOwner':
+                readiness_assess_contract.spec.inputs
+                [readiness_assess_required_field].decisionOwner
+            }
+          ]
+      }}
+  when:
+    - >-
+      readiness_assess_candidate_value is none
+      or (
+        readiness_assess_candidate_value is string
+        and readiness_assess_candidate_value | trim | length == 0
+      )

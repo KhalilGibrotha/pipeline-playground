@@ -1,0 +1,15 @@
+---
+- name: Prepare mock Infoblox test
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Reset scenario artifacts
+      ansible.builtin.file:
+        path: "{{ molecule_ephemeral_directory }}/artifacts"
+        state: absent
+
+    - name: Create scenario artifact directory
+      ansible.builtin.file:
+        path: "{{ molecule_ephemeral_directory }}/artifacts"
+        state: directory
+        mode: "0755"

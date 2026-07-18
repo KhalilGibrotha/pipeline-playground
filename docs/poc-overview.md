@@ -2,72 +2,183 @@
 
 ## Objective
 
-Demonstrate how a data contract catalog can become a control point for automation development, especially for Ansible-based automation platforms.
+Prove an achievable development and delivery pattern for modular Ansible automation by applying it to Windows and Linux virtual-machine builds on VMware.
 
-## Core idea
+The data contract catalog records stable definitions that teams need to share. A manifest created at request approval retains desired values and tracks one build through pauses, integrations, reconciliation, and handoff.
 
-A data contract should not just be documentation. It should be structured enough that automation can validate it, derive configuration from it, and enforce required controls before changes move forward.
+## Leadership primer
 
-## POC scope
+### Data contracts as code
 
-In scope for the first pass:
+A data contract is a versioned agreement about the information automation may
+trust. It defines valid fields, accountable owners and sources, compatibility,
+and which values are required at each phase.
 
-- define a contract structure
-- show catalog organization
-- show how contract metadata maps to automation
-- define the developer workflow for AAP-oriented Ansible work
-- define the toolchain for local workstation and OpenShift Dev Spaces use
-- identify architectural and governance gaps
+Keeping the contract in source control makes changes reviewable and testable.
+It reduces developer guesswork, makes integration handoffs explicit, and
+creates a stable interface for reusable automation.
 
-Out of scope for the first pass:
+### Build manifest
 
-- full UI or portal implementation
-- production identity integration
-- production policy engine integration
-- full AAP provisioning automation
-- enterprise approval workflow implementation
+A build manifest is the durable tracking record for one approved server
+request. It preserves the original intent, current phase, missing information,
+next owner, resume point, and evidence references.
 
-## POC questions to answer
+The manifest makes waiting visible and allows a build to stop safely instead of
+holding an AAP job open while people gather data. It also preserves pre-build
+intent that a discovery-only CMDB cannot observe.
 
-1. What fields are mandatory in a contract for your environment?
-2. Which fields should be informational versus enforceable?
-3. Which contract changes should trigger automation?
-4. Which controls must block merge or promotion?
-5. Which artifacts should be generated from catalog content?
+### AAP workflow
 
-## Suggested phased delivery
+AAP coordinates short jobs: load the current manifest, assess readiness,
+execute one phase, and persist the result. If a required value is missing, the
+workflow records a controlled blocked state and exits. A later request event,
+webhook, or schedule launches the next short run from the retained revision.
 
-### Phase 1: model and review
+The contract defines the rules, the manifest carries state and evidence, AAP
+coordinates execution, and the CMDB continues to represent discovered
+operational state.
 
-- create sample contracts
-- define catalog taxonomy
-- map contract sections to automation use cases
-- review with architecture and platform stakeholders
+## Problems to solve
 
-### Phase 2: validation pipeline
+1. Integration and build data cannot be discovered or tracked consistently.
+2. A server is partially built and waits indefinitely for later manual inputs.
+3. A discovery-only CMDB does not preserve approved pre-build intent.
+4. Developers choose inventory groups and variables because decision ownership is unclear.
+5. Automation logic is copied because teams cannot safely consume shared modules.
+6. Windows and Linux lifecycle behavior drifts even where requirements are common.
+7. Shared folders and CSV files are slow, difficult to automate, and weak at retaining provenance.
+8. Handoffs do not identify completed work, blockers, evidence, reconciliation, or the next owner.
+9. AAP jobs can become thin launchers for a persistent shadow execution host, leaving dependencies, state, and the true execution path outside the platform boundary.
+10. VMs can be created in a temporary cluster with temporary network values, then readdressed and relocated after final placement data arrives.
 
-- validate YAML structure
-- validate schema compatibility rules
-- validate required ownership and classification fields
-- lint Ansible content that consumes contract data
+## Artifact model
 
-### Phase 3: generated automation inputs
+| Artifact | Purpose | Likely home |
+| --- | --- | --- |
+| Contract definition | Required fields, ownership, mappings, readiness gates, and interfaces | Git repository |
+| Build manifest | Approved intent, current phase, values, provenance, blockers, and artifact references for one server | S3-compatible object store, coordinated by workflow/request system |
+| Lifecycle event | Append-only record of a transition, failure, retry, or resume | S3-compatible object store |
+| Evidence artifact | VMware, IPAM, OS, testing, and reconciliation results | S3-compatible object store |
+| Final handoff snapshot | Origin, final desired/observed result, and handoff success | retained object storage |
+| CMDB record | Discovered operational state | existing discovery-driven CMDB |
 
-- generate inventory vars, templates, or job inputs from contracts
-- publish validated artifacts for AAP use
-- demonstrate contract-driven automation execution
+The manifest does not replace the CMDB. It preserves intent before discovery and provides reconciliation evidence after discovery.
 
-### Phase 4: controlled promotion
+## Primary test case
 
-- environment promotion checks
-- contract version governance
-- evidence capture for approvals and audit
+The focused scenario is documented in [server-build-poc.md](server-build-poc.md).
 
-## Architectural gaps likely to surface
+It covers:
 
-- canonical source of truth for ownership and stewardship
-- enterprise taxonomy for classification and criticality
-- schema evolution rules and compatibility policy
-- environment-specific overrides
-- approval boundaries between data owners and automation owners
-- runtime feedback loop from automation back to catalog status
+- manifest creation from an approved request event
+- a common Windows/Linux lifecycle
+- stage-specific pause and resume behavior
+- deterministic VMware placement, inventory, and variables
+- OS-specific configuration adapters behind a common interface
+- mocked Infoblox allocation and DNS behavior
+- S3-compatible artifact retention
+- desired-state comparison with simulated VMware and CMDB observations
+- explicit completion evidence and handoff ownership
+
+## In scope for the first maturity target
+
+- common contract and build-manifest format
+- Windows and Linux fixtures
+- request-approval trigger contract and idempotency rule
+- field source, owner, and provenance metadata
+- stage-specific readiness rules
+- VMware-first placement and provisioning model
+- good, incomplete, invalid, and retry scenarios
+- normalized inventory and variable generation
+- local object-storage adapter and artifact layout
+- reusable Ansible role boundaries
+- lint, syntax, fixture, and behavior tests
+- purpose-built execution environment
+- local Podman and OpenShift Dev Spaces workflow
+- generated readiness, reconciliation, and handoff evidence
+- explicit AAP execution boundaries for local API work and segmented-network work
+- a readiness gate that prefers final VMware placement before VM creation
+
+## Deferred until the first path is proven
+
+- production request-system, CMDB, VMware, Infoblox, Windows, Linux, or object-storage connectivity
+- policy-as-code beyond validation and readiness rules
+- catalog UI or developer portal
+- enterprise approval orchestration redesign
+- a new authoritative CMDB or inventory product
+- automated controller configuration for all environments
+- universal execution environment or collection governance
+
+## Success criteria
+
+1. An approved request creates exactly one logical manifest with an approval snapshot.
+2. Windows and Linux use the same lifecycle and evidence envelope.
+3. An incomplete request reports the blocked phase, missing fields, expected sources, and owners.
+4. A paused build retains desired and derived values and resumes without manual reconstruction.
+5. The same approved facts produce the same VMware placement, inventory, and normalized variables.
+6. Platform-specific behavior is isolated behind common role interfaces.
+7. Good, invalid, blocked, retry, and mismatch paths run in a repeatable toolchain.
+8. Object storage retains version and evidence references without exposing credentials.
+9. Handoff compares desired state with available VMware, guest, and CMDB observations.
+10. The final artifact shows origination, outcomes, discrepancies, and handoff success.
+
+## Delivery stages
+
+### Stage 1: create and retain the tracking artifact
+
+- define the common contract and manifests
+- accept a synthetic approved-request payload
+- create one idempotent manifest
+- retain approval provenance
+- write artifacts locally first, then through an S3-compatible adapter
+
+### Stage 2: make readiness and pause/resume visible
+
+- evaluate common lifecycle gates
+- emit actionable blocker details
+- retain phase, safe state, and next owner
+- resume from an updated manifest
+
+### Stage 3: standardize inputs and VMware provisioning
+
+- encode owned placement and template mappings
+- generate inventory and role inputs
+- implement a VMware simulator adapter
+- retain intended and returned VM identifiers
+
+### Stage 4: prove Windows/Linux parity and modularity
+
+- implement common role interfaces
+- add thin Windows and Linux adapters
+- test common outcomes and platform-specific differences
+- promote stable, reusable content into a collection when a second consumer exists
+
+### Stage 5: integrate and reconcile
+
+- use the existing Infoblox mock
+- simulate monitoring, backup, and discovery results
+- compare desired and observed values
+- generate the final handoff snapshot
+
+### Stage 6: connect controlled systems
+
+- test the organization's on-premises S3-compatible service
+- replace VMware and IPAM mocks through supported collection-backed adapters
+- use disposable Windows and Linux targets
+- run through non-production AAP
+
+## Questions the POC should force the organization to answer
+
+- Which approval event authorizes manifest creation?
+- Which system coordinates active phase transitions and prevents concurrent updates?
+- Which work legitimately runs locally in an execution environment, and which work requires a managed execution node near the target?
+- Which dependencies and state must be removed from persistent bastion or utility hosts?
+- Which system owns each required input?
+- What is a safe VMware holding state at each blocked phase?
+- Which network and placement facts must be ready before a VM is created?
+- Which defaults and mappings are platform standards?
+- Which desired values must reconcile with discovery before handoff?
+- How long are manifests and evidence retained?
+- How are active builds searched without returning to shared CSV tracking?
+- Who owns shared automation and its release lifecycle?

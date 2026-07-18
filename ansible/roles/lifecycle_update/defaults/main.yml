@@ -1,0 +1,8 @@
+---
+lifecycle_update_contract: {}
+lifecycle_update_manifest: {}
+lifecycle_update_readiness_report: {}
+lifecycle_update_expected_revision: 0
+lifecycle_update_event_id: ""
+lifecycle_update_occurred_at: ""
+lifecycle_update_artifact_root: "{{ playbook_dir }}/../generated-vars/server-builds"

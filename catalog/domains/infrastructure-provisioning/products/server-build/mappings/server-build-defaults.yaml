@@ -1,0 +1,86 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationMapping
+metadata:
+  id: mapping:infrastructure-provisioning/server-build/defaults
+  name: server-build-defaults
+  domain: infrastructure-provisioning
+  product: server-build
+  owner: infrastructure-platform@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  buildProfiles:
+    small:
+      cpu_count: 2
+      memory_gb: 8
+    medium:
+      cpu_count: 4
+      memory_gb: 16
+  osProfiles:
+    windows-server-2022:
+      os_family: windows
+      vmware_template: windows-2022-standard-demo
+      inventory_groups:
+        - windows_managed
+      connection_profile: winrm
+    windows-server-2025:
+      os_family: windows
+      vmware_template: windows-2025-standard-demo
+      inventory_groups:
+        - windows_managed
+      connection_profile: winrm
+    rhel-9:
+      os_family: linux
+      vmware_template: rhel-9-standard-demo
+      inventory_groups:
+        - linux_managed
+      connection_profile: ssh
+    rhel-10:
+      os_family: linux
+      vmware_template: rhel-10-standard-demo
+      inventory_groups:
+        - linux_managed
+      connection_profile: ssh
+  placementProfiles:
+    lab:
+      compute_cluster: cluster-demo-a
+      storage_policy: standard-demo
+      inventory_groups:
+        - site_lab
+    site-a:
+      compute_cluster: cluster-demo-a
+      storage_policy: standard-demo
+      inventory_groups:
+        - site_a
+    site-b:
+      compute_cluster: cluster-demo-b
+      storage_policy: standard-demo
+      inventory_groups:
+        - site_b
+  environmentGroups:
+    dev: env_dev
+    test: env_test
+    qa: env_qa
+    prod: env_prod
+  networkProfiles:
+    application-internal:
+      dns_domain: example.test
+  platformOperations:
+    windows:
+      support_group: example-windows-support
+    linux:
+      support_group: example-linux-support
+  environmentOperations:
+    dev:
+      monitoring_profile: standard-nonprod
+      backup_profile: standard-nonprod
+    test:
+      monitoring_profile: standard-test
+      backup_profile: standard-test
+    qa:
+      monitoring_profile: standard-nonprod
+      backup_profile: standard-nonprod
+    prod:
+      monitoring_profile: standard-prod
+      backup_profile: standard-prod

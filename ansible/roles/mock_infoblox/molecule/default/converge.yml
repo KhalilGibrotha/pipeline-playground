@@ -1,0 +1,56 @@
+---
+- name: Exercise mocked Infoblox behavior
+  hosts: all
+  gather_facts: false
+  vars:
+    simulation_root: "{{ playbook_dir }}/../../../../../simulations/infoblox"
+    artifact_root: "{{ molecule_ephemeral_directory }}/artifacts"
+
+  tasks:
+    - name: Allocate address for eligible request  # noqa var-naming[no-role-prefix]
+      ansible.builtin.include_role:
+        name: mock_infoblox
+      vars:
+        request_id: REQ-MOLECULE-0001
+        application_id: APP-MOLECULE-01
+        hostname: molecule-001.example.test
+        site: lab
+        network_profile: application-internal
+        application_environment: test
+        data_classification: internal
+        dns_domain: example.test
+        network_selector: application-internal_test_internal
+        infoblox_mock_dir: "{{ simulation_root }}"
+        generated_vars_dir: "{{ artifact_root }}"
+
+    - name: Verify request without an eligible subnet is rejected
+      block:
+        - name: Attempt allocation with no matching subnet  # noqa var-naming[no-role-prefix]
+          ansible.builtin.include_role:
+            name: mock_infoblox
+          vars:
+            request_id: REQ-MOLECULE-NO-SUBNET
+            application_id: APP-MOLECULE-01
+            hostname: molecule-no-subnet.example.test
+            site: site-b
+            network_profile: application-dmz
+            application_environment: prod
+            data_classification: confidential
+            dns_domain: example.test
+            network_selector: application-dmz_prod_confidential
+            infoblox_mock_dir: "{{ simulation_root }}"
+            generated_vars_dir: "{{ artifact_root }}"
+
+        - name: Record unexpected subnet match
+          ansible.builtin.set_fact:
+            mock_infoblox_no_subnet_rejected: false
+
+      rescue:
+        - name: Record expected subnet rejection
+          ansible.builtin.set_fact:
+            mock_infoblox_no_subnet_rejected: true
+
+    - name: Assert missing subnet was rejected
+      ansible.builtin.assert:
+        that:
+          - mock_infoblox_no_subnet_rejected | bool

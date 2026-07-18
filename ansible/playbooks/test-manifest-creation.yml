@@ -1,0 +1,177 @@
+---
+- name: Test approved-event manifest creation for Windows and Linux
+  hosts: localhost
+  gather_facts: false
+  vars:
+    server_build_root: >-
+      {{ playbook_dir }}/../../catalog/domains/infrastructure-provisioning/products/server-build
+    intake_examples_root: >-
+      {{ playbook_dir }}/../../catalog/domains/automation-intake/examples/server-requests
+    contract_file: "{{ server_build_root }}/contracts/lifecycle/contract.yaml"
+    mapping_file: "{{ server_build_root }}/mappings/server-build-defaults.yaml"
+    windows_event_file: >-
+      {{ intake_examples_root }}/windows-request-approved.yaml
+    linux_event_file: >-
+      {{ intake_examples_root }}/linux-request-approved.yaml
+    invalid_event_file: >-
+      {{ intake_examples_root }}/invalid-request-approved.yaml
+    windows_expected_file: >-
+      {{ server_build_root }}/examples/build-manifests/windows-build-complete.yaml
+    linux_expected_file: >-
+      {{ server_build_root }}/examples/build-manifests/linux-build-complete.yaml
+  pre_tasks:
+    - name: Create isolated test artifact directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: pipeline-playground-manifest-test
+      register: manifest_test_tempdir
+
+    - name: Load common test inputs
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ contract_file }}"
+          name: active_contract
+        - file: "{{ mapping_file }}"
+          name: active_mapping
+        - file: "{{ windows_event_file }}"
+          name: windows_event
+        - file: "{{ linux_event_file }}"
+          name: linux_event
+        - file: "{{ invalid_event_file }}"
+          name: invalid_event
+        - file: "{{ windows_expected_file }}"
+          name: windows_expected
+        - file: "{{ linux_expected_file }}"
+          name: linux_expected
+
+  tasks:
+    - name: Create Windows manifest
+      ansible.builtin.include_role:
+        name: manifest_create
+      vars:
+        manifest_create_contract: "{{ active_contract }}"
+        manifest_create_mapping: "{{ active_mapping }}"
+        manifest_create_event: "{{ windows_event }}"
+        manifest_create_artifact_root: "{{ manifest_test_tempdir.path }}"
+
+    - name: Retain first Windows creation result
+      ansible.builtin.set_fact:
+        manifest_test_windows_first_result: "{{ manifest_create_result }}"
+
+    - name: Validate generated Windows manifest
+      ansible.builtin.assert:
+        that:
+          - manifest_test_windows_first_result.disposition == 'created'
+          - manifest_create_document == windows_expected
+        fail_msg: Generated Windows manifest did not match the expected deterministic artifact.
+
+    - name: Replay duplicate Windows approval event
+      ansible.builtin.set_fact:
+        manifest_test_windows_replayed_event: >-
+          {{
+            windows_event
+            | combine(
+                {
+                  'metadata': windows_event.metadata
+                  | combine({'event_id': 'EVT-DEMO-0001-REDELIVERY'})
+                },
+                recursive=true
+              )
+          }}
+        manifest_test_drifted_mapping: >-
+          {{ active_mapping | combine({'metadata': {'version': '0.1.1'}}, recursive=true) }}
+
+    - name: Process redelivered Windows approval event
+      ansible.builtin.include_role:
+        name: manifest_create
+      vars:
+        manifest_create_contract: "{{ active_contract }}"
+        manifest_create_mapping: "{{ manifest_test_drifted_mapping }}"
+        manifest_create_event: "{{ manifest_test_windows_replayed_event }}"
+        manifest_create_artifact_root: "{{ manifest_test_tempdir.path }}"
+
+    - name: Check returned replay evidence path
+      ansible.builtin.stat:
+        path: "{{ manifest_create_result.event_path }}"
+      register: manifest_test_replay_event_stat
+
+    - name: Validate duplicate event idempotency
+      ansible.builtin.assert:
+        that:
+          - manifest_create_result.disposition == 'existing'
+          - manifest_create_result.event_disposition == 'existing'
+          - manifest_create_existing_document == windows_expected
+          - manifest_create_result.event_path == manifest_test_windows_first_result.event_path
+          - manifest_test_replay_event_stat.stat.exists
+          - manifest_create_result.mapping_version == manifest_test_windows_first_result.mapping_version
+        fail_msg: Duplicate approved event created or changed the logical Windows manifest.
+
+    - name: Create Linux manifest
+      ansible.builtin.include_role:
+        name: manifest_create
+      vars:
+        manifest_create_contract: "{{ active_contract }}"
+        manifest_create_mapping: "{{ active_mapping }}"
+        manifest_create_event: "{{ linux_event }}"
+        manifest_create_artifact_root: "{{ manifest_test_tempdir.path }}"
+
+    - name: Validate generated Linux manifest
+      ansible.builtin.assert:
+        that:
+          - manifest_create_result.disposition == 'created'
+          - manifest_create_document == linux_expected
+        fail_msg: Generated Linux manifest did not match the expected deterministic artifact.
+
+    - name: Build an event with unknown platform selectors
+      ansible.builtin.set_fact:
+        manifest_test_unsupported_event: >-
+          {{
+            invalid_event
+            | combine(
+                {
+                  'spec': {
+                    'requested_build': {
+                      'os_family': 'unsupported',
+                      'os_version': 'unsupported-1'
+                    }
+                  }
+                },
+                recursive=true
+              )
+          }}
+
+    - name: Verify incompatible OS family and version are rejected
+      block:
+        - name: Attempt invalid manifest creation
+          ansible.builtin.include_role:
+            name: manifest_create
+          vars:
+            manifest_create_contract: "{{ active_contract }}"
+            manifest_create_mapping: "{{ active_mapping }}"
+            manifest_create_event: "{{ manifest_test_unsupported_event }}"
+            manifest_create_artifact_root: "{{ manifest_test_tempdir.path }}"
+
+        - name: Mark unexpected invalid-event acceptance
+          ansible.builtin.set_fact:
+            manifest_test_invalid_rejected: false
+      rescue:
+        - name: Mark expected invalid-event rejection
+          ansible.builtin.set_fact:
+            manifest_test_invalid_rejected: true
+            manifest_test_invalid_failure_message: "{{ ansible_failed_result.msg | default('') }}"
+
+    - name: Assert invalid event was rejected
+      ansible.builtin.assert:
+        that:
+          - manifest_test_invalid_rejected | bool
+          - "'Approved request contains an unknown or incompatible' in manifest_test_invalid_failure_message"
+        fail_msg: Incompatible OS family and version unexpectedly produced a manifest.
+
+  post_tasks:
+    - name: Remove isolated test artifact directory
+      ansible.builtin.file:
+        path: "{{ manifest_test_tempdir.path }}"
+        state: absent
+      when: manifest_test_tempdir.path is defined

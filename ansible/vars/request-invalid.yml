@@ -1,9 +1,8 @@
 request_id: REQ0001236
-enterprise_app_id: APP12345
+application_id: APP-DEMO-01
 hostname: srv-demo-003.example.test
-datacenter: nowhere
-is_zta: true
-zta_classification: secret
-zta_environment: prod
-zta_exposure: edge
-app_sdlc_environment: production
+site: nowhere
+network_profile: unsupported-profile
+application_environment: prod
+data_classification: unsupported-value
+dns_domain: example.test

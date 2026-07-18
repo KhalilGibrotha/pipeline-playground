@@ -1,0 +1,62 @@
+---
+- name: Exercise contract preflight behavior
+  hosts: all
+  gather_facts: false
+  vars:
+    address_management_root: >-
+      {{ playbook_dir }}/../../../../../catalog/domains/network-services/products/address-management
+    contract_file: "{{ address_management_root }}/contracts/address-allocation/contract.yaml"
+
+  pre_tasks:
+    - name: Load infrastructure contract
+      ansible.builtin.include_vars:
+        file: "{{ contract_file }}"
+        name: active_contract
+
+  tasks:
+    - name: Validate supported request  # noqa var-naming[no-role-prefix]
+      ansible.builtin.include_role:
+        name: contract_preflight
+      vars:
+        request_id: REQ-MOLECULE-0001
+        application_id: APP-MOLECULE-01
+        hostname: molecule-001.example.test
+        site: lab
+        network_profile: application-internal
+        application_environment: test
+        data_classification: internal
+        dns_domain: example.test
+
+    - name: Assert deterministic network selector derivation
+      ansible.builtin.assert:
+        that:
+          - contract_preflight_network_selector == 'application-internal_test_internal'
+
+    - name: Verify invalid site is rejected
+      block:
+        - name: Attempt unsupported request  # noqa var-naming[no-role-prefix]
+          ansible.builtin.include_role:
+            name: contract_preflight
+          vars:
+            request_id: REQ-MOLECULE-INVALID
+            application_id: APP-MOLECULE-01
+            hostname: molecule-invalid.example.test
+            site: unsupported
+            network_profile: application-internal
+            application_environment: test
+            data_classification: internal
+            dns_domain: example.test
+
+        - name: Record unexpected acceptance
+          ansible.builtin.set_fact:
+            contract_preflight_invalid_request_rejected: false
+
+      rescue:
+        - name: Record expected rejection
+          ansible.builtin.set_fact:
+            contract_preflight_invalid_request_rejected: true
+
+    - name: Assert invalid request was rejected
+      ansible.builtin.assert:
+        that:
+          - contract_preflight_invalid_request_rejected | bool

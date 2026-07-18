@@ -1,0 +1,9 @@
+---
+- name: Clean up lifecycle update test
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Remove lifecycle artifacts
+      ansible.builtin.file:
+        path: "{{ molecule_ephemeral_directory }}/artifacts"
+        state: absent

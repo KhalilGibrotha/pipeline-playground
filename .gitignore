@@ -1,2 +1,7 @@
 ansible/generated-vars/
+.cache/
+.venv/
+.molecule/
 *.retry
+__pycache__/
+*.pyc

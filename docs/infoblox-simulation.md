@@ -6,7 +6,7 @@ For the POC, the goal is to simulate the interaction contract:
 
 1. input fields arrive from the build request
 2. contract validation passes or fails
-3. a zone token is derived
+3. a provider-neutral network selector is derived
 4. a subnet lookup is performed
 5. an IP allocation response is returned
 6. a host metadata write payload is produced
@@ -15,7 +15,7 @@ For the POC, the goal is to simulate the interaction contract:
 
 The POC only needs three API-shaped behaviors:
 
-- subnet lookup by zone and site
+- subnet lookup by network profile, site, environment, and data classification
 - next available IP allocation
 - host record / EA update
 
@@ -85,11 +85,10 @@ The provisioning contract should carry only the fields needed to make and audit 
 - request identifier
 - application identifier
 - hostname
-- datacenter or site
-- zta classification
-- zta exposure
-- zta environment
-- is_zta
+- site
+- network profile
+- environment
+- data classification
 - requested DNS domain
 - operating system
 - owner
@@ -99,6 +98,11 @@ The contract can also define which fields are:
 - required inputs
 - derived values
 - write-back outputs
+
+These fields belong to the network-services address-allocation contract. The
+Infoblox adapter maps them to provider external attributes and objects. This
+keeps provider vocabulary out of the server-build contract and makes a second
+IPAM implementation possible without changing the domain interface.
 
 ## Failure cases worth simulating
 

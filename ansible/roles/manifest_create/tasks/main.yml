@@ -1,0 +1,250 @@
+---
+- name: Validate approved request event envelope
+  ansible.builtin.assert:
+    that:
+      - manifest_create_event.apiVersion == 'catalog.example.io/v1alpha1'
+      - manifest_create_event.kind == 'ApprovedServerRequestEvent'
+      - manifest_create_event.metadata.event_id | default('') | length > 0
+      - manifest_create_event.metadata.occurred_at | default('') | length > 0
+      - manifest_create_event.spec.request.request_id | default('') | length > 0
+      - manifest_create_event.spec.request.source_reference | default('') | length > 0
+      - manifest_create_event.spec.approval.approval_reference | default('') | length > 0
+      - manifest_create_event.spec.approval.approved_at | default('') | length > 0
+      - manifest_create_event.spec.requested_build.application_id | default('') | length > 0
+      - manifest_create_event.spec.requested_build.environment | default('') | length > 0
+      - manifest_create_event.spec.requested_build.hostname | default('') | length > 0
+      - manifest_create_event.spec.requested_build.os_family | default('') | length > 0
+      - manifest_create_event.spec.requested_build.os_version | default('') | length > 0
+      - manifest_create_event.spec.requested_build.build_profile | default('') | length > 0
+      - manifest_create_event.spec.requested_build.site | default('') | length > 0
+      - manifest_create_event.spec.requested_build.network_profile | default('') | length > 0
+      - manifest_create_event.spec.requested_build.service_owner | default('') | length > 0
+    fail_msg: Approved request event is missing its required creation evidence or build selector.
+
+- name: Set approved request selectors
+  ansible.builtin.set_fact:
+    manifest_create_request: "{{ manifest_create_event.spec.request }}"
+    manifest_create_approval: "{{ manifest_create_event.spec.approval }}"
+    manifest_create_requested_build: "{{ manifest_create_event.spec.requested_build }}"
+
+- name: Resolve owned mapping profiles
+  ansible.builtin.set_fact:
+    manifest_create_build_profile: >-
+      {{ manifest_create_mapping.spec.buildProfiles[manifest_create_requested_build.build_profile] | default({}) }}
+    manifest_create_os_profile: >-
+      {{ manifest_create_mapping.spec.osProfiles[manifest_create_requested_build.os_version] | default({}) }}
+    manifest_create_placement_profile: >-
+      {{ manifest_create_mapping.spec.placementProfiles[manifest_create_requested_build.site] | default({}) }}
+    manifest_create_environment_group: >-
+      {{ manifest_create_mapping.spec.environmentGroups[manifest_create_requested_build.environment] | default('') }}
+    manifest_create_network_profile: >-
+      {{ manifest_create_mapping.spec.networkProfiles[manifest_create_requested_build.network_profile] | default({}) }}
+    manifest_create_platform_operations: >-
+      {{ manifest_create_mapping.spec.platformOperations[manifest_create_requested_build.os_family] | default({}) }}
+    manifest_create_environment_operations: >-
+      {{ manifest_create_mapping.spec.environmentOperations[manifest_create_requested_build.environment] | default({}) }}
+
+- name: Validate selected profiles and platform compatibility
+  ansible.builtin.assert:
+    that:
+      - manifest_create_build_profile | length > 0
+      - manifest_create_os_profile | length > 0
+      - manifest_create_placement_profile | length > 0
+      - manifest_create_environment_group | length > 0
+      - manifest_create_network_profile | length > 0
+      - manifest_create_platform_operations | length > 0
+      - manifest_create_environment_operations | length > 0
+      - (manifest_create_os_profile.os_family | default('')) == manifest_create_requested_build.os_family
+      - manifest_create_requested_build.os_family in manifest_create_contract.spec.supportedPlatforms
+      - >-
+        manifest_create_requested_build.os_version in
+        (
+          manifest_create_contract.spec.supportedPlatforms[manifest_create_requested_build.os_family]
+          | default({'osVersions': []})
+        ).osVersions
+    fail_msg: Approved request contains an unknown or incompatible build, OS, placement, network, or environment profile.
+
+- name: Set manifest artifact locations
+  ansible.builtin.set_fact:
+    manifest_create_request_root: >-
+      {{ manifest_create_artifact_root }}/requests/{{ manifest_create_request.request_id }}
+    manifest_create_object_key: >-
+      server-builds/requests/{{ manifest_create_request.request_id }}/manifest.yaml
+
+- name: Set manifest and event paths
+  ansible.builtin.set_fact:
+    manifest_create_manifest_path: "{{ manifest_create_request_root }}/manifest.yaml"
+    manifest_create_event_directory: "{{ manifest_create_request_root }}/events"
+    manifest_create_event_path: >-
+      {{ manifest_create_request_root }}/events/{{ manifest_create_event.metadata.event_id }}-manifest-created.json
+
+- name: Build deterministic server manifest
+  ansible.builtin.set_fact:
+    manifest_create_document:
+      apiVersion: catalog.example.io/v1alpha1
+      kind: BuildManifest
+      metadata:
+        name: "build-{{ manifest_create_request.request_id | lower }}"
+        contract: >-
+          {{ manifest_create_contract.metadata.name }}@{{ manifest_create_contract.metadata.version }}
+        createdAt: "{{ manifest_create_event.metadata.occurred_at }}"
+        createdBy: approved-request-event
+        revision: 1
+        artifactKey: "{{ manifest_create_object_key }}"
+      status:
+        phase: approved
+        outcome: pending-readiness-assessment
+      spec:
+        request:
+          request_id: "{{ manifest_create_request.request_id }}"
+          source_reference: "{{ manifest_create_request.source_reference }}"
+        approval:
+          approval_reference: "{{ manifest_create_approval.approval_reference }}"
+          approved_at: "{{ manifest_create_approval.approved_at }}"
+        application:
+          application_id: "{{ manifest_create_requested_build.application_id }}"
+          environment: "{{ manifest_create_requested_build.environment }}"
+        build: >-
+          {{
+            {
+              'hostname': manifest_create_requested_build.hostname,
+              'os_family': manifest_create_requested_build.os_family,
+              'os_version': manifest_create_requested_build.os_version
+            }
+            | combine(manifest_create_build_profile)
+          }}
+        virtualization:
+          provider: vmware
+          template: "{{ manifest_create_os_profile.vmware_template }}"
+        placement:
+          site: "{{ manifest_create_requested_build.site }}"
+          compute_cluster: "{{ manifest_create_placement_profile.compute_cluster }}"
+          storage_policy: "{{ manifest_create_placement_profile.storage_policy }}"
+        integrations:
+          ipam:
+            network_profile: "{{ manifest_create_requested_build.network_profile }}"
+            dns_domain: "{{ manifest_create_network_profile.dns_domain }}"
+        operations:
+          service_owner: "{{ manifest_create_requested_build.service_owner }}"
+          support_group: "{{ manifest_create_platform_operations.support_group }}"
+          monitoring_profile: "{{ manifest_create_environment_operations.monitoring_profile }}"
+          backup_profile: "{{ manifest_create_environment_operations.backup_profile }}"
+        derived:
+          inventory_groups: >-
+            {{
+              (
+                manifest_create_os_profile.inventory_groups
+                + manifest_create_placement_profile.inventory_groups
+                + [manifest_create_environment_group]
+              ) | unique | list
+            }}
+          connection_profile: "{{ manifest_create_os_profile.connection_profile }}"
+        provenance:
+          request_snapshot: artifacts/approval/request-snapshot.yaml
+          contract_version: >-
+            {{ manifest_create_contract.metadata.name }}@{{ manifest_create_contract.metadata.version }}
+          mapping_version: >-
+            {{ manifest_create_mapping.metadata.name }}@{{ manifest_create_mapping.metadata.version }}
+          source_event: "{{ manifest_create_event.metadata.event_id }}"
+
+- name: Ensure local artifact directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ manifest_create_request_root }}"
+    - "{{ manifest_create_event_directory }}"
+
+- name: Check for an existing logical manifest
+  ansible.builtin.stat:
+    path: "{{ manifest_create_manifest_path }}"
+  register: manifest_create_existing_stat
+
+- name: Load existing logical manifest
+  ansible.builtin.include_vars:
+    file: "{{ manifest_create_manifest_path }}"
+    name: manifest_create_existing_document
+  when: manifest_create_existing_stat.stat.exists
+
+- name: Reject a conflicting duplicate creation event
+  ansible.builtin.assert:
+    that:
+      - manifest_create_existing_document.spec.request.request_id == manifest_create_request.request_id
+      - manifest_create_existing_document.spec.approval.approval_reference == manifest_create_approval.approval_reference
+      - manifest_create_existing_document.metadata.contract == manifest_create_document.metadata.contract
+      - manifest_create_existing_document.spec.request.source_reference == manifest_create_request.source_reference
+      - manifest_create_existing_document.spec.application.application_id == manifest_create_requested_build.application_id
+      - manifest_create_existing_document.spec.application.environment == manifest_create_requested_build.environment
+      - manifest_create_existing_document.spec.build.hostname == manifest_create_requested_build.hostname
+      - manifest_create_existing_document.spec.build.os_family == manifest_create_requested_build.os_family
+      - manifest_create_existing_document.spec.build.os_version == manifest_create_requested_build.os_version
+      - manifest_create_existing_document.spec.placement.site == manifest_create_requested_build.site
+      - >-
+        manifest_create_existing_document.spec.integrations.ipam.network_profile ==
+        manifest_create_requested_build.network_profile
+      - manifest_create_existing_document.spec.operations.service_owner == manifest_create_requested_build.service_owner
+    fail_msg: Existing manifest does not match the approved request idempotency identity.
+  when: manifest_create_existing_stat.stat.exists
+
+- name: Write manifest revision one
+  ansible.builtin.copy:
+    dest: "{{ manifest_create_manifest_path }}"
+    content: "{{ manifest_create_document | to_nice_yaml(indent=2, sort_keys=false) }}"
+    mode: "0644"
+  register: manifest_create_write_result
+  when: not manifest_create_existing_stat.stat.exists
+
+- name: Build manifest-created lifecycle event
+  ansible.builtin.set_fact:
+    manifest_create_lifecycle_event:
+      apiVersion: catalog.example.io/v1alpha1
+      kind: BuildLifecycleEvent
+      metadata:
+        event_id: "{{ manifest_create_event.metadata.event_id }}-manifest-created"
+        occurred_at: "{{ manifest_create_event.metadata.occurred_at }}"
+      spec:
+        request_id: "{{ manifest_create_request.request_id }}"
+        approval_reference: "{{ manifest_create_approval.approval_reference }}"
+        transition:
+          from: approved
+          to: manifest-created
+        manifest_key: "{{ manifest_create_object_key }}"
+        source_event: "{{ manifest_create_event.metadata.event_id }}"
+
+- name: Write append-only manifest-created event
+  ansible.builtin.copy:
+    dest: "{{ manifest_create_event_path }}"
+    content: "{{ manifest_create_lifecycle_event | to_nice_json(indent=2) }}"
+    mode: "0644"
+    force: false
+  when: not manifest_create_existing_stat.stat.exists
+
+- name: Publish manifest creation result
+  ansible.builtin.set_fact:
+    manifest_create_result:
+      disposition: >-
+        {{ 'existing' if manifest_create_existing_stat.stat.exists else 'created' }}
+      request_id: "{{ manifest_create_request.request_id }}"
+      manifest_path: "{{ manifest_create_manifest_path }}"
+      manifest_key: "{{ manifest_create_object_key }}"
+      event_path: >-
+        {{
+          manifest_create_request_root
+          + '/events/'
+          + (
+              manifest_create_existing_document.spec.provenance.source_event
+              if manifest_create_existing_stat.stat.exists
+              else manifest_create_event.metadata.event_id
+            )
+          + '-manifest-created.json'
+        }}
+      event_disposition: >-
+        {{ 'existing' if manifest_create_existing_stat.stat.exists else 'created' }}
+      contract_version: "{{ manifest_create_document.metadata.contract }}"
+      mapping_version: >-
+        {{
+          manifest_create_existing_document.spec.provenance.mapping_version
+          if manifest_create_existing_stat.stat.exists
+          else manifest_create_document.spec.provenance.mapping_version
+        }}

@@ -1,0 +1,66 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: BuildManifest
+metadata:
+  name: request-demo-windows-waiting-network
+  contract: server-build@0.2.0
+  createdAt: "2026-01-15T15:30:00Z"
+  createdBy: approved-request-event
+  updatedAt: "2026-01-15T16:10:00Z"
+  revision: 4
+  artifactKey: server-builds/requests/REQ-DEMO-0002/manifest.yaml
+status:
+  phase: infrastructure-provisioned
+  outcome: blocked
+  resumePhase: network-integration-ready
+  safeState: powered-off-on-isolated-staging-network
+  blockers:
+    - field: integrations.ipam.network_profile
+      expectedSource: network-mapping
+      decisionOwner: network-platform
+    - field: integrations.ipam.dns_domain
+      expectedSource: network-mapping
+      decisionOwner: network-platform
+spec:
+  request:
+    request_id: REQ-DEMO-0002
+    source_reference: request-system/REQ-DEMO-0002
+  approval:
+    approval_reference: APR-DEMO-0002
+    approved_at: "2026-01-15T15:29:30Z"
+  application:
+    application_id: APP-DEMO-02
+    environment: test
+  build:
+    hostname: win-demo-002.example.test
+    os_family: windows
+    os_version: windows-server-2022
+    cpu_count: 2
+    memory_gb: 8
+  virtualization:
+    provider: vmware
+    template: windows-2022-standard-demo
+  placement:
+    site: lab
+    compute_cluster: cluster-demo-a
+    storage_policy: standard-demo
+  integrations:
+    ipam:
+      network_profile: ""
+      dns_domain: ""
+  operations:
+    service_owner: example-service-owner
+    support_group: example-windows-support
+    monitoring_profile: standard-test
+    backup_profile: standard-test
+  provenance:
+    request_snapshot: artifacts/approval/request-snapshot.yaml
+    contract_version: server-build@0.2.0
+    mapping_version: server-build-defaults@0.1.0
+  observedState:
+    vmware:
+      instance_uuid: 00000000-0000-0000-0000-000000000002
+      managed_object_id: vm-demo-0002
+      power_state: powered-off
+  artifacts:
+    vmware_result: artifacts/vmware-result.json
+    latest_readiness_report: artifacts/readiness-report.yaml

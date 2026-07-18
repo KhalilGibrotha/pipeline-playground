@@ -1,114 +1,204 @@
-# Toolchain
+# Development toolchain
+
+## Goal
+
+Give an automation developer the same repeatable path from workstation to CI to AAP while keeping the first POC small enough to adopt.
+
+The toolchain should prove that content is reviewable, testable, reusable, and packaged consistently. It does not need every enterprise control on day one.
 
 ## Development environments
 
-You currently have two practical environments:
+### WSL2 or Linux workstation
 
-1. OpenShift Dev Spaces at work
-2. Local Windows workstation with Podman and Kubernetes
+Use WSL2 or Linux for editing, Git, fixture development, Ansible, Molecule, and
+Podman-backed execution environments. This is the preferred local control
+environment because Dev Spaces, CI runners, execution environments, and AAP
+execution nodes are Linux-based.
 
-Use them for different purposes.
+Keep the repository in the Linux filesystem when practical, for example:
 
-## Recommended split
+```text
+$HOME/src/pipeline-playground
+```
+
+A checkout under `/mnt/c/` is acceptable during transition, but Windows-mounted
+storage and synchronization tools can add filesystem latency and different
+permission semantics. Do not keep virtual environments, container storage, or
+dependency caches in a synchronized Windows folder.
+
+The intended local loop is:
+
+1. edit a contract, manifest, role, or test
+2. run fast lint and fixture tests
+3. execute the playbook through the same execution-environment dependency set
+4. inspect generated readiness and evidence artifacts
+5. commit and open a pull request
+
+Kubernetes is optional for this POC. It becomes useful only if a component genuinely needs a service or cluster deployment.
+
+A local S3-compatible service is a valid first container experiment because it tests manifest keys, versions, events, and retries. It does not validate the enterprise endpoint's performance or compatibility.
+
+Create an isolated development environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install --requirement requirements-dev.txt
+pre-commit install --hook-type pre-commit --hook-type pre-push
+```
+
+The development and execution-environment requirements constrain
+`ansible-core` to the 2.16 release family used by the AAP 2.6 control plane and
+built-in execution environments. Upgrade that compatibility baseline as an
+intentional, tested change rather than allowing CI to select a newer core
+release automatically.
+
+If the Codex desktop agent runs in WSL2, install `bubblewrap` so the Linux
+sandbox can start:
+
+```bash
+sudo apt-get update
+sudo apt-get install bubblewrap
+```
+
+Codex documents that changing the agent from Windows native to WSL requires an
+app restart and that local setup scripts then run in the selected agent
+environment. See [ChatGPT desktop app for Windows](https://learn.chatgpt.com/docs/windows/windows-app.md#windows-subsystem-for-linux-wsl).
+
+### Native Windows companion
+
+Native Windows remains useful for PowerPoint, browser-based reviews, and
+workstation-specific validation. It should not be the primary Ansible control
+environment.
+
+The Codex integrated terminal and agent environment are independent settings.
+A WSL agent can be paired with either a WSL or PowerShell terminal, but project
+commands in this repository are maintained as Bash-first.
 
 ### OpenShift Dev Spaces
 
-Use this as the primary shared development environment when the work needs:
+Use Dev Spaces as the shared development environment when internal access and team collaboration are needed. The checked-in devfile should make the repository reproducible and give developers the same commands and dependencies.
 
-- parity with container and cluster controls
-- collaboration with internal teams
-- easier review of containerized automation content
-- a path toward cluster-hosted validation or demo workflows
+Dev Spaces is especially useful for:
 
-### Local Windows workstation
+- access to internal registries and test systems
+- consistent onboarding
+- containerized Ansible development
+- reviewing the workflow with other teams
 
-Use this for:
+It is not itself the CI system or the production AAP runtime.
 
-- editing contracts and docs
-- fast local linting
-- container build validation with Podman
-- lightweight Kubernetes experiments when you want to test packaging patterns
+## Toolchain layers
 
-Do not optimize the POC around Windows-native Ansible execution. Optimize around a consistent containerized developer toolchain that happens to be runnable from Windows.
+### Authoring
 
-## Recommended development model
+- Git and pull requests
+- YAML and Markdown
+- contract and build-manifest fixtures
+- Visual Studio Code or the Dev Spaces editor
 
-### Authoring layer
+### Fast validation
 
-- YAML contracts
-- JSON Schema or OpenAPI-based schema definitions where appropriate
-- Markdown architecture and gap documentation
-
-### Validation layer
-
-- YAML lint
-- contract schema validation
-- custom policy checks
+- `yamllint`
+- schema or purpose-built manifest validation
 - `ansible-lint`
-- collection/playbook syntax checks
+- `ansible-playbook --syntax-check`
+- deterministic comparison of generated artifacts
 
-### Packaging layer
+Basic readiness validation belongs here. A general policy engine is deferred until real cross-contract policy needs appear.
 
-- execution environment image for repeatable tooling
-- versioned generated artifacts
-- optional collection packaging for shared automation logic
+### Behavior testing
 
-### Runtime layer
+- good, incomplete, and invalid build manifests
+- duplicate approved-request events and manifest idempotency
+- common Windows/Linux readiness scenarios
+- mocked VMware, Infoblox, object-storage, and CMDB responses and failures
+- role-level assertions for normalized inputs and readiness results
+- artifact version, event, retry, and reconciliation checks
+- Molecule scenarios for every role, including success, idempotence, and expected-failure behavior
+- target-host idempotence checks when disposable Windows and Linux systems become available
+- `ansible-test` sanity, unit, and integration tests after reusable content is packaged as a collection
 
-- automation controller project sync
-- job template inputs from validated contract-derived artifacts
-- workflow execution against non-production targets first
+Artifact-processing roles use Molecule's delegated driver because they do not
+configure a remote target. Infrastructure and operating-system roles should
+use containers or disposable VMware targets appropriate to the behavior being
+tested. A role is not considered complete without a runnable Molecule scenario.
 
-## Suggested repo layout
+### Packaging
+
+- a small purpose-built execution environment
+- pinned collection and Python dependencies
+- versioned collection artifacts once shared content exists
+- release notes and compatibility metadata for reusable content
+
+Provider collections such as `vmware.vmware`, `amazon.aws`, `infoblox.nios_modules`, and the Windows/Linux content dependencies should be added only to the execution environment that implements those adapters, with versions pinned and tested together.
+
+### Runtime and promotion
+
+- local execution against mocks
+- CI execution against fixtures
+- non-production integration targets
+- non-production AAP project and job template
+- controlled promotion only after prior stages produce evidence
+
+## Minimum pull-request checks
+
+The first useful pipeline should run:
+
+1. public-content and secret scan
+2. YAML lint
+3. contract/build-manifest validation
+4. Ansible lint
+5. syntax check
+6. good-path fixture test
+7. expected-failure fixture tests
+8. generated-artifact comparison
+
+Add execution-environment build validation after the content loop works. Add real VMware, object-storage, Windows, Linux, and other integration tests only when disposable non-production targets and credentials are available.
+
+## Reuse progression
+
+Do not require every role to begin in a separately released collection.
 
 ```text
-catalog/
-  contracts/
-  schemas/
-  policies/
-ansible/
-  playbooks/
-  roles/
-  collections/
-  generated-vars/
-execution-environment/
-docs/
+repo-local role -> documented stable role -> collection content -> versioned shared release
 ```
 
-## Tooling baseline
+Promotion to the next boundary should require:
 
-Inside the execution environment and Dev Spaces workspace, install:
+- more than one credible consumer
+- documented inputs and outputs
+- tests for supported behavior
+- a named maintainer
+- compatibility and release expectations
 
-- ansible-core
-- ansible-dev-tools
-- ansible-lint
-- yamllint
-- jmespath
-- jsonschema or an equivalent validator
+This makes sharing achievable without turning the POC into a collection-governance program.
 
-Optional next additions:
+## Suggested first commands
 
-- molecule
-- pytest
-- pre-commit
-- opa or conftest if you want policy-as-code
+```bash
+bash scripts/validate.sh
+```
 
-## CI/CD shape for the POC
+Repository privacy, encoding, and AI-artifact checks are documented separately
+in [Repository quality controls](repository-quality-controls.md). They are
+source-governance safeguards rather than components of the POC architecture.
 
-1. Pull request opened
-2. Contract and schema validation runs
-3. Policy checks run
-4. Ansible lint and syntax checks run
-5. Generated artifacts are built for review
-6. Non-production AAP execution is triggered only for approved changes
+Once an execution-environment image is available:
 
-## Practical recommendation
+```bash
+cd ansible
+ansible-navigator run playbooks/mock-infoblox-provision.yml \
+  -e @vars/request-good.yml \
+  --mode stdout
+```
 
-For the POC, keep one source repository and one execution environment image. That is enough to demonstrate:
+## Adoption sequence
 
-- catalog structure
-- validation flow
-- generated automation inputs
-- AAP-oriented development practices
-
-Split repositories only if organizational boundaries require it later.
+1. Make one POC developer path reproducible.
+2. Add checks that protect the common server-build contract and mock flow.
+3. Run the same checks in the organization's CI platform.
+4. Demonstrate one non-production AAP execution.
+5. Extract the first genuinely reusable role into a collection.
+6. Standardize reusable pipeline templates only after the first repository exposes what is actually common.

@@ -1,0 +1,70 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: BuildManifest
+metadata:
+  name: request-demo-linux-waiting-operations
+  contract: server-build@0.2.0
+  createdAt: "2026-01-16T15:30:00Z"
+  createdBy: approved-request-event
+  updatedAt: "2026-01-16T16:25:00Z"
+  revision: 6
+  artifactKey: server-builds/requests/REQ-DEMO-0004/manifest.yaml
+status:
+  phase: os-configured
+  outcome: blocked
+  resumePhase: operational-validation
+  safeState: powered-on-restricted-to-build-services
+  blockers:
+    - field: operations.support_group
+      expectedSource: support-model
+      decisionOwner: service-management
+    - field: operations.monitoring_profile
+      expectedSource: operational-standard
+      decisionOwner: monitoring-platform
+    - field: operations.backup_profile
+      expectedSource: operational-standard
+      decisionOwner: backup-platform
+spec:
+  request:
+    request_id: REQ-DEMO-0004
+    source_reference: request-system/REQ-DEMO-0004
+  approval:
+    approval_reference: APR-DEMO-0004
+    approved_at: "2026-01-16T15:29:30Z"
+  application:
+    application_id: APP-DEMO-04
+    environment: test
+  build:
+    hostname: lin-demo-002.example.test
+    os_family: linux
+    os_version: rhel-9
+    cpu_count: 2
+    memory_gb: 8
+  virtualization:
+    provider: vmware
+    template: rhel-9-standard-demo
+  placement:
+    site: lab
+    compute_cluster: cluster-demo-a
+    storage_policy: standard-demo
+  integrations:
+    ipam:
+      network_profile: application-internal
+      dns_domain: example.test
+  operations:
+    service_owner: example-service-owner
+    support_group: ""
+    monitoring_profile: ""
+    backup_profile: ""
+  provenance:
+    request_snapshot: artifacts/approval/request-snapshot.yaml
+    contract_version: server-build@0.2.0
+    mapping_version: server-build-defaults@0.1.0
+  observedState:
+    vmware:
+      instance_uuid: 00000000-0000-0000-0000-000000000004
+      managed_object_id: vm-demo-0004
+      power_state: powered-on
+  artifacts:
+    vmware_result: artifacts/vmware-result.json
+    os_configuration_result: artifacts/os-configuration-result.json
+    latest_readiness_report: artifacts/readiness-report.yaml

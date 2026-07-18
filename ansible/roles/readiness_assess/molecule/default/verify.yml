@@ -1,0 +1,35 @@
+---
+- name: Verify corrected readiness behavior
+  hosts: all
+  gather_facts: false
+  vars:
+    catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+    server_build_root: >-
+      {{ catalog_root }}/domains/infrastructure-provisioning/products/server-build
+
+  tasks:
+    - name: Load contract and complete Windows manifest
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: "{{ server_build_root }}/contracts/lifecycle/contract.yaml"
+          name: active_contract
+        - file: "{{ server_build_root }}/examples/build-manifests/windows-build-complete.yaml"
+          name: complete_manifest
+
+    - name: Assess complete base-build gate
+      ansible.builtin.include_role:
+        name: readiness_assess
+      vars:
+        readiness_assess_contract: "{{ active_contract }}"
+        readiness_assess_manifest: "{{ complete_manifest }}"
+        readiness_assess_gate_name: baseBuild
+        readiness_assess_occurred_at: "2026-01-15T15:00:00Z"
+
+    - name: Assert ready outcome
+      ansible.builtin.assert:
+        that:
+          - readiness_assess_report.status.ready | bool
+          - readiness_assess_report.status.blockerCount | int == 0
+          - readiness_assess_report.status.outcome == 'base-build-ready'

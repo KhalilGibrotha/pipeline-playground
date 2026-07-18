@@ -1,0 +1,30 @@
+---
+- name: Verify mocked Infoblox artifact
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Load generated host-record payload
+      ansible.builtin.set_fact:
+        mock_infoblox_generated_host_record: >-
+          {{
+            lookup(
+              'ansible.builtin.file',
+              molecule_ephemeral_directory
+              + '/artifacts/REQ-MOLECULE-0001-host-record.json'
+            ) | from_json
+          }}
+
+    - name: Check failed request artifact
+      ansible.builtin.stat:
+        path: >-
+          {{ molecule_ephemeral_directory }}/artifacts/REQ-MOLECULE-NO-SUBNET-host-record.json
+      register: mock_infoblox_failed_request_artifact
+
+    - name: Assert allocation and payload evidence
+      ansible.builtin.assert:
+        that:
+          - mock_infoblox_generated_host_record.name == 'molecule-001.example.test'
+          - mock_infoblox_generated_host_record.ipv4addrs[0].ipv4addr == '192.0.2.42'
+          - mock_infoblox_generated_host_record.extattrs.NetworkProfile.value == 'application-internal'
+          - mock_infoblox_generated_host_record.extattrs.RequestID.value == 'REQ-MOLECULE-0001'
+          - not mock_infoblox_failed_request_artifact.stat.exists

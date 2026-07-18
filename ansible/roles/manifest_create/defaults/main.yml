@@ -1,0 +1,5 @@
+---
+manifest_create_artifact_root: "{{ playbook_dir }}/../generated-vars/server-builds"
+manifest_create_contract: {}
+manifest_create_mapping: {}
+manifest_create_event: {}

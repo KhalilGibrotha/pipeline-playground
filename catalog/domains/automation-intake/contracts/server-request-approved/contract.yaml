@@ -1,0 +1,48 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationContract
+metadata:
+  id: contract:automation-intake/server-request-approved
+  name: server-request-approved
+  domain: automation-intake
+  contractType: event
+  owner: automation-intake@example.test
+  steward: automation-engineering@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Publish the minimum approved intent and evidence needed to create a server-build manifest.
+  producer: approved-request-system
+  consumers:
+    - contract:infrastructure-provisioning/server-build/lifecycle
+  artifact:
+    apiVersion: catalog.example.io/v1alpha1
+    kind: ApprovedServerRequestEvent
+  identity:
+    eventIdentity:
+      - metadata.source
+      - metadata.event_id
+    buildIdentity:
+      - spec.request.request_id
+      - spec.approval.approval_reference
+  requiredFields:
+    - metadata.event_id
+    - metadata.occurred_at
+    - metadata.source
+    - spec.request.request_id
+    - spec.request.source_reference
+    - spec.approval.approval_reference
+    - spec.approval.approved_at
+    - spec.requested_build.application_id
+    - spec.requested_build.environment
+    - spec.requested_build.hostname
+    - spec.requested_build.os_family
+    - spec.requested_build.os_version
+    - spec.requested_build.build_profile
+    - spec.requested_build.site
+    - spec.requested_build.network_profile
+    - spec.requested_build.service_owner
+  delivery:
+    duplicateDisposition: replay-safe
+    orderingGuarantee: not-assumed
+    retention: snapshot-with-build-evidence

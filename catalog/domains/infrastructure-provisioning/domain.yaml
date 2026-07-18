@@ -1,0 +1,14 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationDomain
+metadata:
+  id: domain:infrastructure-provisioning
+  name: infrastructure-provisioning
+  owner: infrastructure-platform@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Own server provisioning lifecycle, build state, readiness, and handoff semantics.
+  products:
+    - ref: product:infrastructure-provisioning/server-build
+      path: products/server-build/product.yaml

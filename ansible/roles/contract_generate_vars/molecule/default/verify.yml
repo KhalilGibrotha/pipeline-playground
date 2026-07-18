@@ -1,0 +1,20 @@
+---
+- name: Verify normalized variable artifact
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Load generated contract variables
+      ansible.builtin.include_vars:
+        file: >-
+          {{ molecule_ephemeral_directory }}/artifacts/REQ-MOLECULE-0001-contract-vars.yml
+        name: generated_artifact
+
+    - name: Assert normalized variable content
+      ansible.builtin.assert:
+        that:
+          - generated_artifact.request.request_id == 'REQ-MOLECULE-0001'
+          - generated_artifact.request.site == 'lab'
+          - generated_artifact.network.network_profile == 'application-internal'
+          - generated_artifact.network.application_environment == 'test'
+          - generated_artifact.network.data_classification == 'internal'
+          - generated_artifact.derived.network_selector == 'application-internal_test_internal'

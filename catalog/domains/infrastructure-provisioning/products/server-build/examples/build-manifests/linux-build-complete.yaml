@@ -1,0 +1,55 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: BuildManifest
+metadata:
+  name: build-req-demo-0003
+  contract: server-build@0.2.0
+  createdAt: "2026-01-16T14:30:00Z"
+  createdBy: approved-request-event
+  revision: 1
+  artifactKey: server-builds/requests/REQ-DEMO-0003/manifest.yaml
+status:
+  phase: approved
+  outcome: pending-readiness-assessment
+spec:
+  request:
+    request_id: REQ-DEMO-0003
+    source_reference: request-system/REQ-DEMO-0003
+  approval:
+    approval_reference: APR-DEMO-0003
+    approved_at: "2026-01-16T14:29:30Z"
+  application:
+    application_id: APP-DEMO-03
+    environment: test
+  build:
+    hostname: lin-demo-001.example.test
+    os_family: linux
+    os_version: rhel-9
+    cpu_count: 2
+    memory_gb: 8
+  virtualization:
+    provider: vmware
+    template: rhel-9-standard-demo
+  placement:
+    site: lab
+    compute_cluster: cluster-demo-a
+    storage_policy: standard-demo
+  integrations:
+    ipam:
+      network_profile: application-internal
+      dns_domain: example.test
+  operations:
+    service_owner: example-service-owner
+    support_group: example-linux-support
+    monitoring_profile: standard-test
+    backup_profile: standard-test
+  derived:
+    inventory_groups:
+      - linux_managed
+      - site_lab
+      - env_test
+    connection_profile: ssh
+  provenance:
+    request_snapshot: artifacts/approval/request-snapshot.yaml
+    contract_version: server-build@0.2.0
+    mapping_version: server-build-defaults@0.1.0
+    source_event: EVT-DEMO-0003

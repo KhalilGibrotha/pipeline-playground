@@ -1,0 +1,43 @@
+---
+- name: Verify lifecycle revision artifacts
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Load current and immutable manifest revisions
+      ansible.builtin.include_vars:
+        file: "{{ item.file }}"
+        name: "{{ item.name }}"
+      loop:
+        - file: >-
+            {{ molecule_ephemeral_directory }}/artifacts/requests/REQ-DEMO-0002/manifest.yaml
+          name: current_manifest
+        - file: >-
+            {{ molecule_ephemeral_directory }}/artifacts/requests/REQ-DEMO-0002/revisions/revision-5.yaml
+          name: immutable_manifest
+
+    - name: Find append-only transition event
+      ansible.builtin.find:
+        paths: >-
+          {{ molecule_ephemeral_directory }}/artifacts/requests/REQ-DEMO-0002/events
+        patterns: EVT-MOLECULE-BLOCKED.json
+        file_type: file
+      register: lifecycle_update_events
+
+    - name: Find retained readiness report
+      ansible.builtin.find:
+        paths: >-
+          {{ molecule_ephemeral_directory }}/artifacts/requests/REQ-DEMO-0002/artifacts
+        patterns: readiness-revision-5-networkIntegration.yaml
+        file_type: file
+      register: lifecycle_update_readiness_reports
+
+    - name: Assert blocked revision and idempotent event evidence
+      ansible.builtin.assert:
+        that:
+          - current_manifest == immutable_manifest
+          - current_manifest.metadata.revision | int == 5
+          - current_manifest.status.phase == 'infrastructure-provisioned'
+          - current_manifest.status.outcome == 'blocked'
+          - current_manifest.status.blockers | length == 2
+          - lifecycle_update_events.matched == 1
+          - lifecycle_update_readiness_reports.matched == 1
