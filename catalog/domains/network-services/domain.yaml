@@ -1,0 +1,14 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationDomain
+metadata:
+  id: domain:network-services
+  name: network-services
+  owner: network-platform@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Own address, subnet-selection, and DNS-allocation semantics independent of a provider.
+  products:
+    - ref: product:network-services/address-management
+      path: products/address-management/product.yaml

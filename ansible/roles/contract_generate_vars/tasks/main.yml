@@ -4,18 +4,16 @@
     generated_contract_vars:
       request:
         request_id: "{{ request_id }}"
-        enterprise_app_id: "{{ enterprise_app_id }}"
+        application_id: "{{ application_id }}"
         hostname: "{{ hostname }}"
-        datacenter: "{{ datacenter }}"
-        is_zta: "{{ is_zta }}"
-      classification:
-        zta_classification: "{{ zta_classification }}"
-        zta_environment: "{{ zta_environment }}"
-        zta_exposure: "{{ zta_exposure }}"
+        site: "{{ site }}"
+      network:
+        network_profile: "{{ network_profile }}"
+        application_environment: "{{ application_environment }}"
+        data_classification: "{{ data_classification }}"
+        dns_domain: "{{ dns_domain }}"
       derived:
-        ea_microsegment_id: "{{ ea_microsegment_id | default('') }}"
-      outputs:
-        app_sdlc_environment: "{{ app_sdlc_environment | default('') }}"
+        network_selector: "{{ network_selector | default('') }}"
 
 - name: Set generated vars file path
   ansible.builtin.set_fact:

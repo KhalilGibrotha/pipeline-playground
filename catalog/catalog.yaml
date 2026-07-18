@@ -1,0 +1,20 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationCatalog
+metadata:
+  name: pipeline-playground
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  organizationRule: Organize by who owns the meaning; classify by how it is implemented.
+  domains:
+    - ref: domain:automation-intake
+      path: domains/automation-intake/domain.yaml
+    - ref: domain:infrastructure-provisioning
+      path: domains/infrastructure-provisioning/domain.yaml
+    - ref: domain:network-services
+      path: domains/network-services/domain.yaml
+  conventions:
+    solutionDocument: ../docs/data-contract-catalog-solution.md
+    conceptBacklog: ../docs/contract-concept-backlog.md
+    referenceIndex: ../docs/resources.md

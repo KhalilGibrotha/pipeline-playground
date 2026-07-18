@@ -1,0 +1,54 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationContract
+metadata:
+  id: contract:infrastructure-provisioning/server-build/build-manifest
+  name: server-build-manifest
+  domain: infrastructure-provisioning
+  product: server-build
+  contractType: aggregate-artifact
+  owner: infrastructure-platform@example.test
+  steward: automation-engineering@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Preserve approved intent, derived values, lifecycle state, provenance, and handoff evidence for one server build.
+  artifact:
+    apiVersion: catalog.example.io/v1alpha1
+    kind: BuildManifest
+  aggregateRule: Referenced domains retain authority for their fields; the manifest is the durable build projection.
+  identity:
+    logicalBuild:
+      - spec.request.request_id
+      - spec.approval.approval_reference
+    revision:
+      - metadata.artifactKey
+      - metadata.revision
+  ownedSections:
+    - status
+    - spec.build
+    - spec.derived
+    - spec.provenance
+  projectedSections:
+    - spec.request
+    - spec.approval
+    - spec.application
+    - spec.virtualization
+    - spec.placement
+    - spec.integrations
+    - spec.operations
+  requiredSections:
+    - metadata
+    - status
+    - spec.request
+    - spec.approval
+    - spec.build
+    - spec.virtualization
+    - spec.placement
+    - spec.integrations
+    - spec.operations
+    - spec.provenance
+  retention:
+    versioned: true
+    appendOnlyLifecycleEvents: true
+    finalHandoffSnapshot: true

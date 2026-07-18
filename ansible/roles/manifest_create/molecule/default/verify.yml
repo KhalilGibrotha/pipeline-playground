@@ -4,6 +4,8 @@
   gather_facts: false
   vars:
     catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+    server_build_root: >-
+      {{ catalog_root }}/domains/infrastructure-provisioning/products/server-build
     scenario_artifact_root: "{{ molecule_ephemeral_directory }}/artifacts"
 
   tasks:
@@ -14,11 +16,11 @@
       loop:
         - file: "{{ scenario_artifact_root }}/requests/REQ-DEMO-0001/manifest.yaml"
           name: generated_windows_manifest
-        - file: "{{ catalog_root }}/build-manifests/examples/windows-build-complete.yaml"
+        - file: "{{ server_build_root }}/examples/build-manifests/windows-build-complete.yaml"
           name: expected_windows_manifest
         - file: "{{ scenario_artifact_root }}/requests/REQ-DEMO-0003/manifest.yaml"
           name: generated_linux_manifest
-        - file: "{{ catalog_root }}/build-manifests/examples/linux-build-complete.yaml"
+        - file: "{{ server_build_root }}/examples/build-manifests/linux-build-complete.yaml"
           name: expected_linux_manifest
 
     - name: Find manifest-created lifecycle events

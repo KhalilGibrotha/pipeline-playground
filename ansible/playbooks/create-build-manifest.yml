@@ -3,11 +3,13 @@
   hosts: localhost
   gather_facts: false
   vars:
-    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build/contract.yaml"
-    mapping_file: "{{ playbook_dir }}/../../catalog/mappings/server-build-defaults.yaml"
+    server_build_root: >-
+      {{ playbook_dir }}/../../catalog/domains/infrastructure-provisioning/products/server-build
+    contract_file: "{{ server_build_root }}/contracts/lifecycle/contract.yaml"
+    mapping_file: "{{ server_build_root }}/mappings/server-build-defaults.yaml"
     approved_event_name: windows-request-approved.yaml
     approved_event_file: >-
-      {{ playbook_dir }}/../../catalog/request-events/examples/{{ approved_event_name }}
+      {{ playbook_dir }}/../../catalog/domains/automation-intake/examples/server-requests/{{ approved_event_name }}
     artifact_root: "{{ playbook_dir }}/../generated-vars/server-builds"
   pre_tasks:
     - name: Load common server-build contract

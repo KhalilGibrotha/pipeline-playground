@@ -1,0 +1,18 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationProduct
+metadata:
+  id: product:network-services/address-management
+  name: address-management
+  domain: network-services
+  owner: network-platform@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Select an eligible network, allocate an address, and publish auditable result evidence.
+  contracts:
+    - ref: contract:network-services/address-allocation
+      path: contracts/address-allocation/contract.yaml
+  adapters:
+    - ref: adapter:network-services/address-management/infoblox
+      path: adapters/infoblox/adapter.yaml

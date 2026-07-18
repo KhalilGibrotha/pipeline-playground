@@ -3,18 +3,22 @@
   hosts: localhost
   gather_facts: false
   vars:
-    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build/contract.yaml"
-    mapping_file: "{{ playbook_dir }}/../../catalog/mappings/server-build-defaults.yaml"
+    server_build_root: >-
+      {{ playbook_dir }}/../../catalog/domains/infrastructure-provisioning/products/server-build
+    intake_examples_root: >-
+      {{ playbook_dir }}/../../catalog/domains/automation-intake/examples/server-requests
+    contract_file: "{{ server_build_root }}/contracts/lifecycle/contract.yaml"
+    mapping_file: "{{ server_build_root }}/mappings/server-build-defaults.yaml"
     windows_event_file: >-
-      {{ playbook_dir }}/../../catalog/request-events/examples/windows-request-approved.yaml
+      {{ intake_examples_root }}/windows-request-approved.yaml
     linux_event_file: >-
-      {{ playbook_dir }}/../../catalog/request-events/examples/linux-request-approved.yaml
+      {{ intake_examples_root }}/linux-request-approved.yaml
     invalid_event_file: >-
-      {{ playbook_dir }}/../../catalog/request-events/examples/invalid-request-approved.yaml
+      {{ intake_examples_root }}/invalid-request-approved.yaml
     windows_expected_file: >-
-      {{ playbook_dir }}/../../catalog/build-manifests/examples/windows-build-complete.yaml
+      {{ server_build_root }}/examples/build-manifests/windows-build-complete.yaml
     linux_expected_file: >-
-      {{ playbook_dir }}/../../catalog/build-manifests/examples/linux-build-complete.yaml
+      {{ server_build_root }}/examples/build-manifests/linux-build-complete.yaml
   pre_tasks:
     - name: Create isolated test artifact directory
       ansible.builtin.tempfile:

@@ -1,0 +1,32 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationProduct
+metadata:
+  id: product:infrastructure-provisioning/server-build
+  name: server-build
+  domain: infrastructure-provisioning
+  owner: infrastructure-platform@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Create and hand off Windows and Linux virtual servers through one readiness-gated lifecycle.
+  contracts:
+    - ref: contract:infrastructure-provisioning/server-build/lifecycle
+      path: contracts/lifecycle/contract.yaml
+    - ref: contract:infrastructure-provisioning/server-build/build-manifest
+      path: contracts/build-manifest/contract.yaml
+  consumes:
+    - ref: contract:automation-intake/server-request-approved
+    - ref: contract:network-services/address-allocation
+  mappings:
+    - ref: mapping:infrastructure-provisioning/server-build/defaults
+      path: mappings/server-build-defaults.yaml
+  implementationClassifications:
+    virtualization:
+      - vmware
+    operatingSystems:
+      - windows
+      - linux
+    automation:
+      - ansible
+      - aap

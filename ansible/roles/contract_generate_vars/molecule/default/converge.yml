@@ -8,13 +8,12 @@
         name: contract_generate_vars
       vars:
         request_id: REQ-MOLECULE-0001
-        enterprise_app_id: APP-MOLECULE-01
+        application_id: APP-MOLECULE-01
         hostname: molecule-001.example.test
-        datacenter: rtp
-        is_zta: true
-        zta_classification: internal
-        zta_environment: prod
-        zta_exposure: core
-        app_sdlc_environment: production
-        ea_microsegment_id: zone_prod_internal_core
+        site: lab
+        network_profile: application-internal
+        application_environment: test
+        data_classification: internal
+        dns_domain: example.test
+        network_selector: application-internal_test_internal
         generated_vars_dir: "{{ molecule_ephemeral_directory }}/artifacts"

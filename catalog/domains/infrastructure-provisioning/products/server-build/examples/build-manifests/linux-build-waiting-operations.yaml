@@ -48,7 +48,7 @@ spec:
     storage_policy: standard-demo
   integrations:
     ipam:
-      network_profile: test-application
+      network_profile: application-internal
       dns_domain: example.test
   operations:
     service_owner: example-service-owner

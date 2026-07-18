@@ -148,6 +148,19 @@ Append-only lifecycle events are still valuable because raw object versions alon
 
 VMware, Infoblox, object storage, and CMDB discovery should begin as deterministic fixtures or adapter simulations. Move one adapter at a time to a safe non-production system.
 
+### Domain-first cataloging is useful but does not create ownership
+
+The repository now follows the rule: **Organize by who owns the meaning;
+classify by how it is implemented.** Approved demand, server-build lifecycle,
+and address allocation are separate domain contracts. Infoblox is an adapter
+for the provider-neutral address-allocation contract.
+
+This structure improves discoverability and prevents provider payloads from
+becoming accidental enterprise interfaces. It does not decide who the real
+organizational owners are. A production pilot still needs named reviewers,
+change expectations, support boundaries, and an authoritative source for each
+field.
+
 ### Readiness and pause/resume are now proved locally
 
 The POC now demonstrates one common evaluator for Windows and Linux. It reports
@@ -160,7 +173,7 @@ distributed concurrency or object-store conditional writes.
 
 ## Adopt now
 
-1. One common server-build contract for Windows and Linux.
+1. Domain-first catalog organization with one accountable meaning owner per contract.
 2. Manifest creation when a request is approved.
 3. Request ID plus approval reference as the idempotency key.
 4. Synthetic complete, blocked, invalid, retry, and mismatch manifests.
@@ -172,17 +185,18 @@ distributed concurrency or object-store conditional writes.
 10. A purpose-built execution environment, mandatory role-level Molecule scenarios, and minimal CI checks.
 11. Explicit criteria for legitimate local API work versus managed remote execution.
 12. Final-placement readiness before VM creation unless a governed holding state is intentionally approved.
+13. Provider-neutral integration contracts with named implementation adapters.
 
 ## Prove next
 
-1. Can the same approved event be delivered twice without creating two builds?
-2. Can mappings deterministically select VMware template, cluster, storage policy, inventory, and role inputs?
-3. Can manifest versions and append-only events survive object-store retries and partial failures?
-4. Can simulated VMware and CMDB values be reconciled with desired state?
+1. Can manifest versions and append-only events survive object-store retries, conditional writes, and partial failures?
+2. Can a provider-neutral VMware request/result interface retain durable VM identity and placement evidence?
+3. Can synthetic CMDB observations be reconciled with approved intent and attribute authority?
+4. Can Satellite/RHSM and Configuration Manager prove parallel Linux/Windows enrollment and facts patterns?
 5. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
-6. Can the same tests run locally and in CI?
-7. Can one monolithic shadow-host path be split into observable AAP workflow phases?
-8. Can a build remain blocked as a manifest without creating a temporary VM?
+6. Can one monolithic shadow-host path be split into observable AAP workflow phases?
+7. Can a build remain blocked as a manifest without creating a temporary VM?
+8. Can contract changes be checked for consumer compatibility before promotion?
 
 ## Defer
 
@@ -263,6 +277,7 @@ AAP surveys and extra vars transport values. Contracts, mappings, provenance, an
 - A site and zone may have multiple eligible subnets.
 - Allocation plus later metadata update can partially fail.
 - Retry needs an atomic operation, compensating cleanup, or durable remediation record.
+- The provider adapter must not redefine network-profile, site, environment, or data-classification meaning.
 
 ### S3-compatible storage
 
@@ -337,6 +352,7 @@ Evaluate policy engines, portals, cross-domain cataloging, and broader release g
 - [Amazon S3 versioning concepts](https://docs.aws.amazon.com/AmazonS3/latest/userguide/)
 - [Open Data Contract Standard](https://github.com/bitol-io/open-data-contract-standard)
 - [Infoblox NIOS modules collection](https://docs.ansible.com/projects/ansible/latest/collections/infoblox/nios_modules/index.html)
+- [Pipeline Playground catalog and integration references](resources.md#catalog-organization-and-contract-design)
 
 ## Maintenance rule
 

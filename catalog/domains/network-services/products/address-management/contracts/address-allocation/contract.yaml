@@ -1,0 +1,117 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationContract
+metadata:
+  id: contract:network-services/address-allocation
+  name: address-allocation
+  domain: network-services
+  product: address-management
+  contractType: request-result
+  owner: network-platform@example.test
+  steward: automation-engineering@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Define provider-neutral input, result, and failure semantics for server address allocation.
+  requiredInputs:
+    - request_id
+    - application_id
+    - hostname
+    - site
+    - network_profile
+    - application_environment
+    - data_classification
+    - dns_domain
+  inputs:
+    request_id:
+      type: string
+      source: approved-request
+      decisionOwner: automation-intake
+    application_id:
+      type: string
+      source: application-record
+      decisionOwner: application-owner
+    hostname:
+      type: string
+      source: build-manifest
+      decisionOwner: infrastructure-provisioning
+    site:
+      type: string
+      source: placement-mapping
+      decisionOwner: infrastructure-provisioning
+      allowedValues:
+        - lab
+        - site-a
+        - site-b
+    network_profile:
+      type: string
+      source: network-mapping
+      decisionOwner: network-platform
+      allowedValues:
+        - application-internal
+        - application-dmz
+    application_environment:
+      type: string
+      source: application-record
+      decisionOwner: application-owner
+      allowedValues:
+        - dev
+        - test
+        - qa
+        - prod
+    data_classification:
+      type: string
+      source: application-record
+      decisionOwner: data-owner
+      allowedValues:
+        - public
+        - internal
+        - confidential
+    dns_domain:
+      type: string
+      source: network-mapping
+      decisionOwner: network-platform
+  derivedValues:
+    network_selector:
+      expression: <network_profile>_<application_environment>_<data_classification>
+  operations:
+    - name: eligible-network-query
+      inputs:
+        - site
+        - network_profile
+        - application_environment
+        - data_classification
+      cardinality: exactly-one
+    - name: address-allocation
+      input: network-reference
+      output: ip_address
+    - name: dns-record-upsert
+      inputs:
+        - hostname
+        - ip_address
+        - dns_domain
+  result:
+    requiredFields:
+      - request_id
+      - status
+      - provider
+      - provider_reference
+      - network_cidr
+      - ip_address
+      - fqdn
+      - occurred_at
+    allowedStatuses:
+      - allocated
+      - blocked
+      - failed
+  failureSemantics:
+    - code: invalid-input
+      retryable: false
+    - code: no-eligible-network
+      retryable: true
+    - code: ambiguous-network
+      retryable: false
+    - code: no-address-available
+      retryable: true
+    - code: provider-error
+      retryable: true

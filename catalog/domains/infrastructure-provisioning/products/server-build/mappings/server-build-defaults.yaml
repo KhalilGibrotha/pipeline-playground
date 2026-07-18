@@ -1,7 +1,10 @@
 apiVersion: catalog.example.io/v1alpha1
 kind: AutomationMapping
 metadata:
+  id: mapping:infrastructure-provisioning/server-build/defaults
   name: server-build-defaults
+  domain: infrastructure-provisioning
+  product: server-build
   owner: infrastructure-platform@example.test
   version: 0.1.0
   status: draft
@@ -61,7 +64,7 @@ spec:
     qa: env_qa
     prod: env_prod
   networkProfiles:
-    test-application:
+    application-internal:
       dns_domain: example.test
   platformOperations:
     windows:

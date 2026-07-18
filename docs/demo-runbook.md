@@ -29,10 +29,10 @@ Use slide 3 of the engineering walkthrough.
 
 Open these synthetic examples:
 
-- `catalog/request-events/examples/windows-request-approved.yaml`
-- `catalog/request-events/examples/linux-request-approved.yaml`
-- `catalog/contracts/server-build/contract.yaml`
-- `catalog/mappings/server-build-defaults.yaml`
+- `catalog/domains/automation-intake/examples/server-requests/windows-request-approved.yaml`
+- `catalog/domains/automation-intake/examples/server-requests/linux-request-approved.yaml`
+- `catalog/domains/infrastructure-provisioning/products/server-build/contracts/lifecycle/contract.yaml`
+- `catalog/domains/infrastructure-provisioning/products/server-build/mappings/server-build-defaults.yaml`
 
 Point out the separation between supplied request data, contract rules, and
 owned mappings.

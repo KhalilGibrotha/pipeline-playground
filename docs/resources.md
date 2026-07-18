@@ -133,12 +133,93 @@ through the controller API.
   one possible implementation for an S3-compatible artifact adapter. Alternate
   endpoints require compatibility testing.
 
+## Catalog organization and contract design
+
+These sources inform the repository's catalog model. Pipeline Playground does
+not claim conformance with ODCS, Backstage, CloudEvents, or data mesh.
+
+- [ODCS 3.1 fundamentals](https://bitol-io.github.io/open-data-contract-standard/v3.1.0/fundamentals/) -
+  stable contract identity, version, status, logical domain, purpose, and
+  authoritative definitions.
+- [ODCS 3.1 definition](https://bitol-io.github.io/open-data-contract-standard/v3.1.0/) -
+  the wider standard sections and its guidance that a contract should remain
+  platform agnostic.
+- [Backstage Software Catalog](https://backstage.io/docs/features/software-catalog/) -
+  source-controlled YAML metadata, discoverable ownership, and owner-managed
+  updates.
+- [Backstage system model](https://backstage.io/docs/features/software-catalog/system-model/) -
+  domains, systems, components, APIs, and resources as distinct catalog
+  concepts.
+- [Backstage entity references](https://backstage.io/docs/features/software-catalog/references/) -
+  stable, fully qualified references between catalog entities.
+- [Data Mesh Principles and Logical Architecture](https://martinfowler.com/articles/data-mesh-principles.html) -
+  the original author's domain-ownership framing. This informs the heuristic
+  "organize by who owns the meaning"; adopting data mesh is not a POC
+  requirement.
+- [CloudEvents specification](https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md) -
+  event identity, source, type, time, duplicate handling, and interoperable
+  event context. CloudEvents conformance is a possible later enhancement.
+- [JSON Schema specification](https://json-schema.org/specification) -
+  authoritative schema specification for a future machine-validation layer.
+
+## Candidate integration contracts
+
+These product sources support the premises and boundaries in
+[Contract concept priorities and backlog](contract-concept-backlog.md).
+
+### CMDB identification and reconciliation
+
+- [ServiceNow IRE components and process](https://www.servicenow.com/docs/r/servicenow-platform/configuration-management-database-cmdb/c_CompsandProcessIDandReconcil.html) -
+  identification, reconciliation, authoritative sources, duplicate handling,
+  and the centralized API path.
+- [ServiceNow Identification and Reconciliation API](https://www.servicenow.com/docs/r/api-reference/rest-apis/c_IdentifyReconcileAPI.html) -
+  create/update and query endpoints that apply identification and
+  reconciliation rules instead of bypassing them.
+
+### F5 BIG-IP application delivery
+
+- [F5 BIG-IP AS3 user guide](https://clouddocs.f5.com/products/extensions/f5-appsvcs-extension/latest/userguide/) -
+  the declarative AS3 model and REST API.
+- [Validating an AS3 declaration](https://clouddocs.f5.com/products/extensions/f5-appsvcs-extension/latest/userguide/validate.html) -
+  published JSON Schema and pre-deployment validation.
+- [AS3 per-application declarations](https://clouddocs.f5.com/products/extensions/f5-appsvcs-extension/latest/userguide/per-app-declarations.html) -
+  tenant/application source-of-truth and update-scope behavior that an adapter
+  must handle explicitly.
+
+### Red Hat Satellite and target facts
+
+- [Registering hosts to Satellite 6.18](https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html/managing_hosts/registering-hosts-to-satellite) -
+  registration prerequisites, activation keys, host groups, content sources,
+  and lifecycle/content-view selection.
+- [Satellite 6.18 facts settings](https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html/administering_red_hat_satellite/administration_settings_admin#facts-settings) -
+  how Satellite processes Puppet, Ansible, and RHSM facts and which host
+  attributes facts can update.
+- [Satellite 6.18 REST API](https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/using_the_satellite_rest_api/index) -
+  supported API version, host operations, and host-facts retrieval.
+
+### Microsoft Configuration Manager
+
+- [Deploy Configuration Manager clients to Windows](https://learn.microsoft.com/en-us/intune/configmgr/core/clients/deploy/deploy-clients-to-windows-computers) -
+  supported client installation paths, site assignment, retries, and evidence
+  sources.
+- [Monitor Configuration Manager clients](https://learn.microsoft.com/en-us/intune/configmgr/core/clients/manage/monitor-clients) -
+  client health and activity as a separately observed management state.
+- [Configure hardware inventory](https://learn.microsoft.com/en-us/intune/configmgr/core/clients/manage/inventory/configure-hardware-inventory) -
+  hardware-inventory profiles and scheduled client reporting.
+
+### Synthetic networking data
+
+- [RFC 5737 IPv4 address blocks for documentation](https://www.rfc-editor.org/rfc/rfc5737) -
+  reserved example ranges used by the Infoblox simulation.
+
 ## Contracts, manifests, and artifact storage
 
-- [Open Data Contract Standard](https://github.com/bitol-io/open-data-contract-standard) -
-  a useful reference for data-product contracts and catalog interoperability.
-  Full ODCS conformance is deferred; this POC uses only the concepts needed for
-  automation inputs, ownership, compatibility, and gates.
+- [Pipeline Playground data contract catalog solution](data-contract-catalog-solution.md) -
+  domain-first hierarchy, ownership, artifact, adapter, and agent/facts
+  boundaries used by this POC.
+- [Pipeline Playground contract concept backlog](contract-concept-backlog.md) -
+  prioritized CMDB, Satellite, Configuration Manager, VMware, F5, and
+  operational-capability examples.
 - [Amazon S3 versioning concepts](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html) -
   background for retaining prior object variants. Versioning complements, but
   does not replace, append-only lifecycle events or concurrency control.

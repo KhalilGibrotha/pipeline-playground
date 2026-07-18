@@ -4,6 +4,8 @@
   gather_facts: false
   vars:
     catalog_root: "{{ playbook_dir }}/../../../../../catalog"
+    server_build_root: >-
+      {{ catalog_root }}/domains/infrastructure-provisioning/products/server-build
 
   tasks:
     - name: Load contract and complete Windows manifest
@@ -11,9 +13,9 @@
         file: "{{ item.file }}"
         name: "{{ item.name }}"
       loop:
-        - file: "{{ catalog_root }}/contracts/server-build/contract.yaml"
+        - file: "{{ server_build_root }}/contracts/lifecycle/contract.yaml"
           name: active_contract
-        - file: "{{ catalog_root }}/build-manifests/examples/windows-build-complete.yaml"
+        - file: "{{ server_build_root }}/examples/build-manifests/windows-build-complete.yaml"
           name: complete_manifest
 
     - name: Assess complete base-build gate

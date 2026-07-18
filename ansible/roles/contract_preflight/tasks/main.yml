@@ -7,34 +7,33 @@
     success_msg: "Required contract input '{{ item }}' is present."
   loop: "{{ active_contract.spec.requiredInputs }}"
 
-- name: Assert datacenter is allowed
+- name: Assert site is allowed
   ansible.builtin.assert:
     that:
-      - datacenter in active_contract.spec.inputs.datacenter.allowedValues
-    fail_msg: "datacenter '{{ datacenter }}' is not allowed."
+      - site in active_contract.spec.inputs.site.allowedValues
+    fail_msg: "site '{{ site }}' is not allowed."
 
-- name: Assert zta classification is allowed
+- name: Assert network profile is allowed
   ansible.builtin.assert:
     that:
-      - zta_classification in active_contract.spec.inputs.zta_classification.allowedValues
-    fail_msg: "zta_classification '{{ zta_classification }}' is not allowed."
-  when: is_zta | bool
+      - network_profile in active_contract.spec.inputs.network_profile.allowedValues
+    fail_msg: "network_profile '{{ network_profile }}' is not allowed."
 
-- name: Assert zta environment is allowed
+- name: Assert application environment is allowed
   ansible.builtin.assert:
     that:
-      - zta_environment in active_contract.spec.inputs.zta_environment.allowedValues
-    fail_msg: "zta_environment '{{ zta_environment }}' is not allowed."
-  when: is_zta | bool
+      - >-
+        application_environment in
+        active_contract.spec.inputs.application_environment.allowedValues
+    fail_msg: "application_environment '{{ application_environment }}' is not allowed."
 
-- name: Assert zta exposure is allowed
+- name: Assert data classification is allowed
   ansible.builtin.assert:
     that:
-      - zta_exposure in active_contract.spec.inputs.zta_exposure.allowedValues
-    fail_msg: "zta_exposure '{{ zta_exposure }}' is not allowed."
-  when: is_zta | bool
+      - data_classification in active_contract.spec.inputs.data_classification.allowedValues
+    fail_msg: "data_classification '{{ data_classification }}' is not allowed."
 
-- name: Derive zone token
+- name: Derive provider-neutral network selector
   ansible.builtin.set_fact:
-    ea_microsegment_id: "zone_{{ zta_environment | lower }}_{{ zta_classification | lower }}_{{ zta_exposure | lower }}"
-  when: is_zta | bool
+    network_selector: >-
+      {{ network_profile | lower }}_{{ application_environment | lower }}_{{ data_classification | lower }}

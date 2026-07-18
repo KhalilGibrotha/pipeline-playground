@@ -1,0 +1,17 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: AutomationDomain
+metadata:
+  id: domain:automation-intake
+  name: automation-intake
+  owner: automation-intake@example.test
+  version: 0.1.0
+  status: draft
+  classification: synthetic
+spec:
+  purpose: Own the meaning of approved automation demand and its approval evidence.
+  contracts:
+    - ref: contract:automation-intake/server-request-approved
+      path: contracts/server-request-approved/contract.yaml
+  notes:
+    - The requesting system remains the system of record for approval.
+    - The event is an immutable handoff boundary, not the workflow database.

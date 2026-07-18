@@ -19,5 +19,5 @@ spec:
     os_version: rhel-9
     build_profile: small
     site: lab
-    network_profile: test-application
+    network_profile: application-internal
     service_owner: example-service-owner

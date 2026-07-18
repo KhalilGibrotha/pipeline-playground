@@ -111,7 +111,7 @@ The repository includes a thin mock IPAM provisioning path:
 
 1. load the provisioning contract
 2. validate request inputs against required fields and enums
-3. derive `ea_microsegment_id`
+3. derive a provider-neutral `network_selector`
 4. generate normalized vars into `ansible/generated-vars/`
 5. simulate subnet lookup and IP allocation from mock Infoblox data
 6. emit a mock host-record payload artifact

@@ -153,9 +153,18 @@ Active coordination still needs one owner. Conditional writes, workflow locks, o
 
 ```text
 catalog/
-  contracts/              stable definitions and interfaces
-  build-manifests/        synthetic POC instances
-  mappings/               future owned decision tables
+  catalog.yaml             domain index and catalog conventions
+  domains/
+    automation-intake/     approved-demand meaning and event examples
+    infrastructure-provisioning/
+      products/server-build/
+        contracts/         lifecycle and aggregate-artifact interfaces
+        mappings/          owned decisions and platform profiles
+        examples/          synthetic build-manifest instances
+    network-services/
+      products/address-management/
+        contracts/         provider-neutral request/result interfaces
+        adapters/          Infoblox and future provider mappings
 ansible/
   playbooks/              thin lifecycle orchestration
   roles/                  common, platform, provider, and evidence roles
@@ -164,6 +173,9 @@ execution-environment/    repeatable dependencies
 simulations/              VMware, IPAM, CMDB, and object-store fixtures
 docs/                      architecture, reality check, and adoption guidance
 ```
+
+The catalog rule is: **Organize by who owns the meaning; classify by how it is
+implemented.** See [Data contract catalog solution](data-contract-catalog-solution.md).
 
 ## Production boundaries left open
 

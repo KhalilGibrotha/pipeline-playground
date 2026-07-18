@@ -76,6 +76,8 @@ S3-compatible artifact adapter.
 - [docs/server-build-antipatterns.md](docs/server-build-antipatterns.md) - shadow execution, temporary provisioning, target patterns, and migration evidence
 - [docs/architecture.md](docs/architecture.md) - state, artifact, adapter, and handoff boundaries
 - [docs/process-views.md](docs/process-views.md) - complementary Mermaid views for leadership, architecture, and development discussions
+- [docs/data-contract-catalog-solution.md](docs/data-contract-catalog-solution.md) - general domain-first catalog, ownership, artifact, adapter, and agent/facts model
+- [docs/contract-concept-backlog.md](docs/contract-concept-backlog.md) - prioritized CMDB, Satellite, Configuration Manager, VMware, F5, and operational-integration contract examples
 - [docs/demo-runbook.md](docs/demo-runbook.md) - ten-minute engineering demonstration and reusable concept-lab pattern
 - [docs/resources.md](docs/resources.md) - curated Red Hat, Ansible, workflow, testing, integration, and contract references
 - [docs/roadmap.md](docs/roadmap.md) - maturity path and recommended next milestone
@@ -83,11 +85,12 @@ S3-compatible artifact adapter.
 - [docs/toolchain.md](docs/toolchain.md) - local, Dev Spaces, CI, and AAP development flow
 - [docs/reality-check.md](docs/reality-check.md) - grounded patterns, limitations, gaps, and first steps
 - [docs/infoblox-simulation.md](docs/infoblox-simulation.md) - mock IPAM strategy
-- [catalog/contracts/server-build/contract.yaml](catalog/contracts/server-build/contract.yaml) - common Windows/Linux build contract
-- [catalog/contracts/server-build-infoblox/contract.yaml](catalog/contracts/server-build-infoblox/contract.yaml) - IPAM integration contract
-- [catalog/mappings/server-build-defaults.yaml](catalog/mappings/server-build-defaults.yaml) - synthetic build, OS, placement, and inventory mappings
-- [catalog/request-events/examples/](catalog/request-events/examples/) - synthetic approved-request events
-- [catalog/build-manifests/examples/](catalog/build-manifests/examples/) - synthetic request instances
+- [catalog/catalog.yaml](catalog/catalog.yaml) - domain index and catalog conventions
+- [catalog/domains/infrastructure-provisioning/products/server-build/contracts/lifecycle/contract.yaml](catalog/domains/infrastructure-provisioning/products/server-build/contracts/lifecycle/contract.yaml) - common Windows/Linux build lifecycle
+- [catalog/domains/network-services/products/address-management/contracts/address-allocation/contract.yaml](catalog/domains/network-services/products/address-management/contracts/address-allocation/contract.yaml) - provider-neutral network allocation interface
+- [catalog/domains/network-services/products/address-management/adapters/infoblox/adapter.yaml](catalog/domains/network-services/products/address-management/adapters/infoblox/adapter.yaml) - simulated Infoblox implementation mapping
+- [catalog/domains/automation-intake/examples/server-requests/](catalog/domains/automation-intake/examples/server-requests/) - synthetic approved-request events
+- [catalog/domains/infrastructure-provisioning/products/server-build/examples/build-manifests/](catalog/domains/infrastructure-provisioning/products/server-build/examples/build-manifests/) - synthetic build instances
 - [ansible/playbooks/mock-infoblox-provision.yml](ansible/playbooks/mock-infoblox-provision.yml) - current runnable mock slice
 
 ## Presentation assets

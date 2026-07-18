@@ -9,6 +9,13 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+SERVER_BUILD_ROOT = (
+    "catalog/domains/infrastructure-provisioning/products/server-build"
+)
+INTAKE_EXAMPLES_ROOT = "catalog/domains/automation-intake/examples/server-requests"
+ADDRESS_MANAGEMENT_ROOT = (
+    "catalog/domains/network-services/products/address-management"
+)
 
 
 def load_yaml(relative_path: str) -> dict[str, Any]:
@@ -23,8 +30,8 @@ def require(condition: bool, message: str) -> None:
 
 
 def validate_pair(event_path: str, manifest_path: str) -> None:
-    contract = load_yaml("catalog/contracts/server-build/contract.yaml")
-    mapping = load_yaml("catalog/mappings/server-build-defaults.yaml")
+    contract = load_yaml(f"{SERVER_BUILD_ROOT}/contracts/lifecycle/contract.yaml")
+    mapping = load_yaml(f"{SERVER_BUILD_ROOT}/mappings/server-build-defaults.yaml")
     event = load_yaml(event_path)
     manifest = load_yaml(manifest_path)
 
@@ -145,8 +152,8 @@ def validate_pair(event_path: str, manifest_path: str) -> None:
 
 
 def validate_invalid_fixture() -> None:
-    mapping = load_yaml("catalog/mappings/server-build-defaults.yaml")
-    event = load_yaml("catalog/request-events/examples/invalid-request-approved.yaml")
+    mapping = load_yaml(f"{SERVER_BUILD_ROOT}/mappings/server-build-defaults.yaml")
+    event = load_yaml(f"{INTAKE_EXAMPLES_ROOT}/invalid-request-approved.yaml")
     requested = event["spec"]["requested_build"]
     os_profile = mapping["spec"]["osProfiles"][requested["os_version"]]
     require(
@@ -155,17 +162,78 @@ def validate_invalid_fixture() -> None:
     )
 
 
+def validate_catalog_relationships() -> None:
+    catalog = load_yaml("catalog/catalog.yaml")
+    lifecycle = load_yaml(f"{SERVER_BUILD_ROOT}/contracts/lifecycle/contract.yaml")
+    mapping = load_yaml(f"{SERVER_BUILD_ROOT}/mappings/server-build-defaults.yaml")
+    manifest_contract = load_yaml(
+        f"{SERVER_BUILD_ROOT}/contracts/build-manifest/contract.yaml"
+    )
+    request_contract = load_yaml(
+        "catalog/domains/automation-intake/contracts/"
+        "server-request-approved/contract.yaml"
+    )
+    network_contract = load_yaml(
+        f"{ADDRESS_MANAGEMENT_ROOT}/contracts/address-allocation/contract.yaml"
+    )
+    infoblox_adapter = load_yaml(
+        f"{ADDRESS_MANAGEMENT_ROOT}/adapters/infoblox/adapter.yaml"
+    )
+
+    domain_refs = {item["ref"] for item in catalog["spec"]["domains"]}
+    require(
+        domain_refs
+        == {
+            "domain:automation-intake",
+            "domain:infrastructure-provisioning",
+            "domain:network-services",
+        },
+        "Catalog domain index is incomplete",
+    )
+    require(
+        lifecycle["metadata"]["id"]
+        == "contract:infrastructure-provisioning/server-build/lifecycle",
+        "Server-build lifecycle contract ID changed",
+    )
+    require(
+        manifest_contract["metadata"]["id"]
+        == "contract:infrastructure-provisioning/server-build/build-manifest",
+        "Build-manifest contract ID changed",
+    )
+    require(
+        request_contract["metadata"]["id"]
+        == "contract:automation-intake/server-request-approved",
+        "Approved-request contract ID changed",
+    )
+    require(
+        infoblox_adapter["spec"]["implements"] == network_contract["metadata"]["id"],
+        "Infoblox adapter does not implement the address-allocation contract",
+    )
+    require(
+        set(mapping["spec"]["networkProfiles"])
+        <= set(
+            network_contract["spec"]["inputs"]["network_profile"]["allowedValues"]
+        ),
+        "Server-build mapping contains a network profile rejected by "
+        "the address-allocation contract",
+    )
+
+
 def main() -> None:
     validate_pair(
-        "catalog/request-events/examples/windows-request-approved.yaml",
-        "catalog/build-manifests/examples/windows-build-complete.yaml",
+        f"{INTAKE_EXAMPLES_ROOT}/windows-request-approved.yaml",
+        f"{SERVER_BUILD_ROOT}/examples/build-manifests/windows-build-complete.yaml",
     )
     validate_pair(
-        "catalog/request-events/examples/linux-request-approved.yaml",
-        "catalog/build-manifests/examples/linux-build-complete.yaml",
+        f"{INTAKE_EXAMPLES_ROOT}/linux-request-approved.yaml",
+        f"{SERVER_BUILD_ROOT}/examples/build-manifests/linux-build-complete.yaml",
     )
     validate_invalid_fixture()
-    print("Validated Windows/Linux manifest fixtures and invalid platform scenario.")
+    validate_catalog_relationships()
+    print(
+        "Validated catalog relationships, Windows/Linux manifests, "
+        "and invalid platform scenario."
+    )
 
 
 if __name__ == "__main__":

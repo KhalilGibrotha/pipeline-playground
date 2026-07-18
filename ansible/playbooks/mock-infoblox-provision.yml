@@ -3,14 +3,28 @@
   hosts: localhost
   gather_facts: false
   vars:
-    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build-infoblox/contract.yaml"
+    address_management_root: >-
+      {{ playbook_dir }}/../../catalog/domains/network-services/products/address-management
+    contract_file: "{{ address_management_root }}/contracts/address-allocation/contract.yaml"
+    adapter_file: "{{ address_management_root }}/adapters/infoblox/adapter.yaml"
     infoblox_mock_dir: "{{ playbook_dir }}/../../simulations/infoblox"
     generated_vars_dir: "{{ playbook_dir }}/../generated-vars"
   pre_tasks:
-    - name: Load infrastructure contract
+    - name: Load provider-neutral address-allocation contract
       ansible.builtin.include_vars:
         file: "{{ contract_file }}"
         name: active_contract
+
+    - name: Load Infoblox implementation adapter
+      ansible.builtin.include_vars:
+        file: "{{ adapter_file }}"
+        name: active_adapter
+
+    - name: Verify adapter contract reference
+      ansible.builtin.assert:
+        that:
+          - active_adapter.spec.implements == active_contract.metadata.id
+        fail_msg: Infoblox adapter does not implement the selected address-allocation contract.
 
     - name: Ensure generated vars directory exists
       ansible.builtin.file:
@@ -29,7 +43,7 @@
         msg:
           request_id: "{{ request_id }}"
           hostname: "{{ hostname }}"
-          zone_token: "{{ ea_microsegment_id }}"
+          network_selector: "{{ network_selector }}"
           selected_subnet: "{{ selected_subnet.network }}"
           allocated_ip: "{{ allocated_ip }}"
           generated_vars_file: "{{ generated_vars_file }}"

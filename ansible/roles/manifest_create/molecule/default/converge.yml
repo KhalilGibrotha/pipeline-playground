@@ -12,15 +12,15 @@
         file: "{{ item.file }}"
         name: "{{ item.name }}"
       loop:
-        - file: "{{ catalog_root }}/contracts/server-build/contract.yaml"
+        - file: "{{ catalog_root }}/domains/infrastructure-provisioning/products/server-build/contracts/lifecycle/contract.yaml"
           name: active_contract
-        - file: "{{ catalog_root }}/mappings/server-build-defaults.yaml"
+        - file: "{{ catalog_root }}/domains/infrastructure-provisioning/products/server-build/mappings/server-build-defaults.yaml"
           name: active_mapping
-        - file: "{{ catalog_root }}/request-events/examples/windows-request-approved.yaml"
+        - file: "{{ catalog_root }}/domains/automation-intake/examples/server-requests/windows-request-approved.yaml"
           name: windows_event
-        - file: "{{ catalog_root }}/request-events/examples/linux-request-approved.yaml"
+        - file: "{{ catalog_root }}/domains/automation-intake/examples/server-requests/linux-request-approved.yaml"
           name: linux_event
-        - file: "{{ catalog_root }}/request-events/examples/invalid-request-approved.yaml"
+        - file: "{{ catalog_root }}/domains/automation-intake/examples/server-requests/invalid-request-approved.yaml"
           name: invalid_event
 
   tasks:

@@ -3,11 +3,13 @@
   hosts: localhost
   gather_facts: false
   vars:
-    contract_file: "{{ playbook_dir }}/../../catalog/contracts/server-build/contract.yaml"
+    server_build_root: >-
+      {{ playbook_dir }}/../../catalog/domains/infrastructure-provisioning/products/server-build
+    contract_file: "{{ server_build_root }}/contracts/lifecycle/contract.yaml"
     windows_manifest_file: >-
-      {{ playbook_dir }}/../../catalog/build-manifests/examples/windows-build-waiting-network.yaml
+      {{ server_build_root }}/examples/build-manifests/windows-build-waiting-network.yaml
     linux_manifest_file: >-
-      {{ playbook_dir }}/../../catalog/build-manifests/examples/linux-build-waiting-operations.yaml
+      {{ server_build_root }}/examples/build-manifests/linux-build-waiting-operations.yaml
 
   pre_tasks:
     - name: Create isolated readiness artifact directory
@@ -83,7 +85,7 @@
                       {
                         'integrations': {
                           'ipam': {
-                            'network_profile': 'test-application',
+                            'network_profile': 'application-internal',
                             'dns_domain': 'example.test'
                           }
                         }

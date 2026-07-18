@@ -24,7 +24,7 @@
       ansible.builtin.assert:
         that:
           - generated_host_record.name == 'molecule-001.example.test'
-          - generated_host_record.ipv4addrs[0].ipv4addr == '10.10.10.42'
-          - generated_host_record.extattrs.Zone.value == 'zone_prod_internal_core'
+          - generated_host_record.ipv4addrs[0].ipv4addr == '192.0.2.42'
+          - generated_host_record.extattrs.NetworkProfile.value == 'application-internal'
           - generated_host_record.extattrs.RequestID.value == 'REQ-MOLECULE-0001'
           - not failed_request_artifact.stat.exists

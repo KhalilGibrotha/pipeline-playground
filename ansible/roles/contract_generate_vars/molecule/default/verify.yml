@@ -13,7 +13,8 @@
       ansible.builtin.assert:
         that:
           - generated_artifact.request.request_id == 'REQ-MOLECULE-0001'
-          - generated_artifact.request.datacenter == 'rtp'
-          - generated_artifact.request.is_zta | bool
-          - generated_artifact.derived.ea_microsegment_id == 'zone_prod_internal_core'
-          - generated_artifact.outputs.app_sdlc_environment == 'production'
+          - generated_artifact.request.site == 'lab'
+          - generated_artifact.network.network_profile == 'application-internal'
+          - generated_artifact.network.application_environment == 'test'
+          - generated_artifact.network.data_classification == 'internal'
+          - generated_artifact.derived.network_selector == 'application-internal_test_internal'

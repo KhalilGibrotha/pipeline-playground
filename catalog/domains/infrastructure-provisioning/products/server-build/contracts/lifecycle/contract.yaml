@@ -1,8 +1,11 @@
 apiVersion: catalog.example.io/v1alpha1
 kind: AutomationContract
 metadata:
+  id: contract:infrastructure-provisioning/server-build/lifecycle
   name: server-build
-  domain: server-provisioning
+  domain: infrastructure-provisioning
+  product: server-build
+  contractType: lifecycle
   owner: infrastructure-platform@example.test
   steward: automation-engineering@example.test
   version: 0.2.0
@@ -14,6 +17,13 @@ spec:
     VMware provisioning, integrations, evidence, and handoff.
   authoritativeMappings:
     serverBuildDefaults: ../../mappings/server-build-defaults.yaml
+  interfaces:
+    approvedRequest:
+      contractRef: ../../../../../automation-intake/contracts/server-request-approved/contract.yaml
+    buildManifest:
+      contractRef: ../build-manifest/contract.yaml
+    networkAllocation:
+      contractRef: ../../../../../network-services/products/address-management/contracts/address-allocation/contract.yaml
   manifestCreation:
     trigger: request-approved
     requiredSourceEvidence:
@@ -76,7 +86,7 @@ spec:
       requiredInputs:
         - integrations.ipam.network_profile
         - integrations.ipam.dns_domain
-      contractRef: ../server-build-infoblox/contract.yaml
+      contractRef: ../../../../../network-services/products/address-management/contracts/address-allocation/contract.yaml
       outcome: network-integration-ready
       blockedSafeState: powered-off-on-isolated-staging-network
     operationalValidation:

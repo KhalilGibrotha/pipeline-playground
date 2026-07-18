@@ -3,8 +3,9 @@
   hosts: all
   gather_facts: false
   vars:
-    contract_file: >-
-      {{ playbook_dir }}/../../../../../catalog/contracts/server-build-infoblox/contract.yaml
+    address_management_root: >-
+      {{ playbook_dir }}/../../../../../catalog/domains/network-services/products/address-management
+    contract_file: "{{ address_management_root }}/contracts/address-allocation/contract.yaml"
 
   pre_tasks:
     - name: Load infrastructure contract
@@ -18,33 +19,33 @@
         name: contract_preflight
       vars:
         request_id: REQ-MOLECULE-0001
-        enterprise_app_id: APP-MOLECULE-01
+        application_id: APP-MOLECULE-01
         hostname: molecule-001.example.test
-        datacenter: rtp
-        is_zta: true
-        zta_classification: internal
-        zta_environment: prod
-        zta_exposure: core
+        site: lab
+        network_profile: application-internal
+        application_environment: test
+        data_classification: internal
+        dns_domain: example.test
 
-    - name: Assert deterministic zone derivation
+    - name: Assert deterministic network selector derivation
       ansible.builtin.assert:
         that:
-          - ea_microsegment_id == 'zone_prod_internal_core'
+          - network_selector == 'application-internal_test_internal'
 
-    - name: Verify invalid datacenter is rejected
+    - name: Verify invalid site is rejected
       block:
         - name: Attempt unsupported request  # noqa var-naming[no-role-prefix]
           ansible.builtin.include_role:
             name: contract_preflight
           vars:
             request_id: REQ-MOLECULE-INVALID
-            enterprise_app_id: APP-MOLECULE-01
+            application_id: APP-MOLECULE-01
             hostname: molecule-invalid.example.test
-            datacenter: unsupported
-            is_zta: true
-            zta_classification: internal
-            zta_environment: prod
-            zta_exposure: core
+            site: unsupported
+            network_profile: application-internal
+            application_environment: test
+            data_classification: internal
+            dns_domain: example.test
 
         - name: Record unexpected acceptance
           ansible.builtin.set_fact:

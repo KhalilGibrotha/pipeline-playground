@@ -2,15 +2,15 @@
   "name": "srv-demo-001.example.test",
   "ipv4addrs": [
     {
-      "ipv4addr": "10.10.10.42"
+      "ipv4addr": "192.0.2.42"
     }
   ],
   "extattrs": {
-    "Zone": {
-      "value": "zone_prod_internal_core"
+    "NetworkProfile": {
+      "value": "application-internal"
     },
     "Application": {
-      "value": "APP12345"
+      "value": "APP-DEMO-01"
     },
     "RequestID": {
       "value": "REQ0001234"
@@ -18,11 +18,11 @@
     "DataClassification": {
       "value": "internal"
     },
-    "aap_managed": {
-      "value": "true"
+    "ManagedBy": {
+      "value": "pipeline-playground"
     },
-    "app_sdlc_environment": {
-      "value": "production"
+    "Environment": {
+      "value": "test"
     }
   }
 }

@@ -1,0 +1,28 @@
+apiVersion: catalog.example.io/v1alpha1
+kind: ContractAdapter
+metadata:
+  id: adapter:network-services/address-management/infoblox
+  name: infoblox-address-allocation
+  domain: network-services
+  product: address-management
+  owner: network-platform@example.test
+  version: 0.1.0
+  status: simulated
+  classification: synthetic
+spec:
+  implements: contract:network-services/address-allocation
+  provider: infoblox-nios
+  simulation: ../../../../../../../simulations/infoblox
+  mappings:
+    networkQuery:
+      NetworkProfile: network_profile
+      Site: site
+      Environment: application_environment
+      DataClassification: data_classification
+    hostRecord:
+      Application: application_id
+      RequestID: request_id
+      ManagedBy: pipeline-playground
+  ansible:
+    role: mock_infoblox
+    futureCollection: infoblox.nios_modules
