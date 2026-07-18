@@ -228,8 +228,23 @@
       request_id: "{{ manifest_create_request.request_id }}"
       manifest_path: "{{ manifest_create_manifest_path }}"
       manifest_key: "{{ manifest_create_object_key }}"
-      event_path: "{{ manifest_create_event_path }}"
+      event_path: >-
+        {{
+          manifest_create_request_root
+          + '/events/'
+          + (
+              manifest_create_existing_document.spec.provenance.source_event
+              if manifest_create_existing_stat.stat.exists
+              else manifest_create_event.metadata.event_id
+            )
+          + '-manifest-created.json'
+        }}
       event_disposition: >-
         {{ 'existing' if manifest_create_existing_stat.stat.exists else 'created' }}
       contract_version: "{{ manifest_create_document.metadata.contract }}"
-      mapping_version: "{{ manifest_create_document.spec.provenance.mapping_version }}"
+      mapping_version: >-
+        {{
+          manifest_create_existing_document.spec.provenance.mapping_version
+          if manifest_create_existing_stat.stat.exists
+          else manifest_create_document.spec.provenance.mapping_version
+        }}

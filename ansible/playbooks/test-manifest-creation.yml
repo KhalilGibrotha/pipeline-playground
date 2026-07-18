@@ -80,15 +80,22 @@
                 recursive=true
               )
           }}
+        manifest_test_drifted_mapping: >-
+          {{ active_mapping | combine({'metadata': {'version': '0.1.1'}}, recursive=true) }}
 
     - name: Process redelivered Windows approval event
       ansible.builtin.include_role:
         name: manifest_create
       vars:
         manifest_create_contract: "{{ active_contract }}"
-        manifest_create_mapping: "{{ active_mapping }}"
+        manifest_create_mapping: "{{ manifest_test_drifted_mapping }}"
         manifest_create_event: "{{ manifest_test_windows_replayed_event }}"
         manifest_create_artifact_root: "{{ manifest_test_tempdir.path }}"
+
+    - name: Check returned replay evidence path
+      ansible.builtin.stat:
+        path: "{{ manifest_create_result.event_path }}"
+      register: manifest_test_replay_event_stat
 
     - name: Validate duplicate event idempotency
       ansible.builtin.assert:
@@ -96,6 +103,9 @@
           - manifest_create_result.disposition == 'existing'
           - manifest_create_result.event_disposition == 'existing'
           - manifest_create_existing_document == windows_expected
+          - manifest_create_result.event_path == manifest_test_windows_first_result.event_path
+          - manifest_test_replay_event_stat.stat.exists
+          - manifest_create_result.mapping_version == manifest_test_windows_first_result.mapping_version
         fail_msg: Duplicate approved event created or changed the logical Windows manifest.
 
     - name: Create Linux manifest
