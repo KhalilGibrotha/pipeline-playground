@@ -65,3 +65,5 @@
 
     - name: Assert delayed worker was rejected
       ansible.builtin.assert:
+        that:
+          - lifecycle_update_stale_rejected | bool
