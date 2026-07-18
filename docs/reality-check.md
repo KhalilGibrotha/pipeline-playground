@@ -26,9 +26,17 @@ A policy platform, catalog portal, writable CMDB, or enterprise workflow redesig
 - **Contract** defines stable meaning, ownership, allowed values, gates, and interfaces.
 - **Manifest** preserves approved intent and the latest phase projection for one build.
 - **Workflow/request system** coordinates active work, concurrency, retries, and human actions.
-- **CMDB discovery** records observed operational state after infrastructure becomes discoverable.
+- **Discovery source** records observed operational state after infrastructure becomes discoverable.
+- **CMDB reconciliation** identifies and merges governed source records into the production CI.
+- **AAP inventory** is a consumer-specific targeting projection, not a replacement CMDB.
 
 The manifest fills the pre-build and handoff-history gap. It should not be presented as a replacement CMDB.
+
+An ideal CMDB integration does not require automation to overwrite discovered
+facts or update a production dataset directly. Build automation can own an
+approved-intent and handoff source dataset while discovery owns runtime
+observations. Identification and reconciliation rules decide how those sources
+contribute to the production CI.
 
 ### Windows and Linux should share the lifecycle
 
@@ -68,6 +76,33 @@ through AAP resources. When network segmentation requires execution closer to
 targets, evaluate registered automation mesh execution and hop nodes rather
 than preserving an unmanaged shadow control node.
 
+### Inventory should be synchronized as a governed projection
+
+Red Hat documents project-backed and custom inventory sources, scheduled
+synchronization, `Update on launch`, and cache timeout behavior. It also
+recommends a defined dynamic inventory synchronization process when an external
+CMDB is the source of truth.
+
+If CMDB access is restricted to a scheduled reporting extract, modernize the
+adapter behind that boundary: land the report once, retain the raw snapshot,
+validate identity and freshness, publish a versioned inventory projection, and
+synchronize it through an AAP inventory source. Server-automation jobs should
+not parse the report.
+
+This removes avoidable post-report delay. It does not improve the source
+observation, CMDB reconciliation, or report-production cadence.
+
+### CMDB writes should use source datasets and reconciliation
+
+BMC Helix CMDB documents source-specific datasets and warns against direct
+updates to the production dataset. Its Reconciliation Engine identifies and
+merges records according to source and attribute precedence.
+
+The ideal pattern is therefore an automation-owned source or staging dataset
+for approved intent, build completion, and handoff evidence. Discovery remains
+authoritative for observed runtime facts. Production CI changes flow through
+the supported identification and reconciliation boundary.
+
 ## Problem-to-pattern fit
 
 | Observed problem | Pattern to test | POC evidence |
@@ -79,6 +114,7 @@ than preserving an unmanaged shadow control node.
 | Windows/Linux flows drift | common lifecycle with platform adapters | shared tests run against both profiles |
 | VMware details leak into orchestration | provider adapter | mock and real provider share an interface |
 | Shared folder/CSV tracking is slow | API-driven object artifacts | measured latency, history, and concurrency comparison |
+| CMDB data reaches AAP through a delayed report chain | immutable report landing, validation, versioned inventory projection, and controller inventory sync | post-report latency, source age, rejection, and AAP sync measures |
 | AAP launches a persistent shadow control node | versioned EE, focused job templates, governed execution placement, durable artifacts | dependencies removed from utility host and phase results visible in AAP |
 | VM is built with temporary IP and placement, then moved | gate creation on final network and placement readiness | blocked request remains durable without requiring a half-built VM |
 | Automation cannot be shared | focused roles, documented interfaces, then collections | second consumer uses a role without copying it |
@@ -186,17 +222,20 @@ distributed concurrency or object-store conditional writes.
 11. Explicit criteria for legitimate local API work versus managed remote execution.
 12. Final-placement readiness before VM creation unless a governed holding state is intentionally approved.
 13. Provider-neutral integration contracts with named implementation adapters.
+14. AAP inventory as a freshness-governed projection of an external source, not a report-processing side effect.
+15. Separate source-observation, report-production, ingestion, publication, and inventory-sync timestamps.
 
 ## Prove next
 
-1. Can manifest versions and append-only events survive object-store retries, conditional writes, and partial failures?
-2. Can a provider-neutral VMware request/result interface retain durable VM identity and placement evidence?
-3. Can synthetic CMDB observations be reconciled with approved intent and attribute authority?
-4. Can Satellite/RHSM and Configuration Manager prove parallel Linux/Windows enrollment and facts patterns?
-5. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
-6. Can one monolithic shadow-host path be split into observable AAP workflow phases?
-7. Can a build remain blocked as a manifest without creating a temporary VM?
-8. Can contract changes be checked for consumer compatibility before promotion?
+1. Can a synthetic reporting extract be landed once, validated, versioned, and synchronized into AAP without a shadow host or shared-folder working state?
+2. Can manifest versions and append-only events survive object-store retries, conditional writes, and partial failures?
+3. Can a provider-neutral VMware request/result interface retain durable VM identity and placement evidence?
+4. Can synthetic CMDB observations be reconciled with approved intent and attribute authority?
+5. Can Satellite/RHSM and Configuration Manager prove parallel Linux/Windows enrollment and facts patterns?
+6. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
+7. Can one monolithic shadow-host path be split into observable AAP workflow phases?
+8. Can a build remain blocked as a manifest without creating a temporary VM?
+9. Can contract changes be checked for consumer compatibility before promotion?
 
 ## Defer
 
@@ -204,7 +243,7 @@ distributed concurrency or object-store conditional writes.
 - full ODCS conformance
 - Backstage or another catalog portal
 - enterprise-wide event-driven orchestration
-- CMDB redesign or write integration
+- production CMDB write integration before source ownership, identity, and reconciliation rules are approved
 - controller configuration as code for every object
 - multiple execution-environment families
 - universal collection governance
@@ -253,6 +292,14 @@ Do not reintroduce a manually maintained CSV as that index.
 ### CMDB reconciliation may be delayed
 
 Discovery may lag handoff or omit fields. Reconciliation should distinguish mismatch from not-yet-observed and define which conditions block handoff.
+
+### A faster adapter cannot outrun a delayed report
+
+A report-only inventory adapter can remove downstream file-copying and parsing
+delay, but it cannot make the source report fresher. The POC must measure
+observation age, report age, ingestion time, and AAP publication time
+separately. “Near real time” is not a valid claim unless the upstream
+production cadence changes.
 
 ### Windows and Linux testing need disposable targets eventually
 
@@ -303,6 +350,10 @@ AAP surveys and extra vars transport values. Contracts, mappings, provenance, an
 - automation mesh execution-node and hop-node requirements
 - dependencies and state currently retained on bastion or utility hosts
 - minimum network and placement facts required before VM creation
+- reporting-extract schema owner, delivery cadence, completion signal, and support boundary
+- stable identity carried across discovery, CMDB, reporting, VMware, and AAP
+- inventory freshness objectives and fail-open/fail-closed rules by automation class
+- source-dataset ownership and attribute precedence for any future CMDB write path
 
 ## Maturity checkpoints
 
@@ -352,6 +403,12 @@ Evaluate policy engines, portals, cross-domain cataloging, and broader release g
 - [Amazon S3 versioning concepts](https://docs.aws.amazon.com/AmazonS3/latest/userguide/)
 - [Open Data Contract Standard](https://github.com/bitol-io/open-data-contract-standard)
 - [Infoblox NIOS modules collection](https://docs.ansible.com/projects/ansible/latest/collections/infoblox/nios_modules/index.html)
+- [OpenText Universal Discovery and CMDB architecture](https://docs.microfocus.com/doc/UCMDB/24.4/Architecture)
+- [TIBCO WebFOCUS ReportCaster guide](https://docs.tibco.com/pub/wf-wf/9.3.6/doc/pdf/IBI_wf-wf_9.3.6_reportcaster_guide.pdf?id=6)
+- [BMC Helix CMDB dataset best practices](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac252/Administering/Managing-data-sources-and-datasets-in-BMC-Helix-CMDB/Best-practices-for-managing-datasets/)
+- [BMC Helix CMDB reconciliation planning](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac252/Planning/Planning-data-reconciliation/)
+- [AAP 2.5 inventories](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-inventories)
+- [Developing Ansible inventory plugins](https://docs.ansible.com/projects/ansible/latest/dev_guide/developing_inventory.html)
 - [Pipeline Playground catalog and integration references](resources.md#catalog-organization-and-contract-design)
 
 ## Maintenance rule

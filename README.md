@@ -78,6 +78,7 @@ S3-compatible artifact adapter.
 - [docs/process-views.md](docs/process-views.md) - complementary Mermaid views for leadership, architecture, and development discussions
 - [docs/data-contract-catalog-solution.md](docs/data-contract-catalog-solution.md) - general domain-first catalog, ownership, artifact, adapter, and agent/facts model
 - [docs/contract-concept-backlog.md](docs/contract-concept-backlog.md) - prioritized CMDB, Satellite, Configuration Manager, VMware, F5, and operational-integration contract examples
+- [docs/discovery-to-automation-awareness.md](docs/discovery-to-automation-awareness.md) - current, constrained-target, and ideal patterns for moving discovery and CMDB data into fresh AAP inventory
 - [docs/demo-runbook.md](docs/demo-runbook.md) - ten-minute engineering demonstration and reusable concept-lab pattern
 - [docs/resources.md](docs/resources.md) - curated Red Hat, Ansible, workflow, testing, integration, and contract references
 - [docs/roadmap.md](docs/roadmap.md) - maturity path and recommended next milestone
@@ -104,6 +105,12 @@ S3-compatible artifact adapter.
 - [Architecture discussion](outputs/server-build-automation-modernization-architecture-discussion.pptx) -
   shadow execution, legitimate local jobs, automation mesh boundaries,
   temporary VMware staging, and the target readiness-gated flow.
+- [Discovery-to-automation leadership brief](outputs/discovery-to-automation-awareness-leadership-brief.pptx) -
+  inventory awareness latency, an achievable report-ingestion pattern, the
+  ideal CMDB reconciliation target, and a bounded leadership decision.
+- [Discovery-to-automation engineering brief](outputs/discovery-to-automation-awareness-engineering-brief.pptx) -
+  representation boundaries, snapshot contracts, AAP synchronization,
+  freshness behavior, CMDB source datasets, and proof scenarios.
 
 ## Current mock quick start
 

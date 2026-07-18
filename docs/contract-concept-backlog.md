@@ -35,6 +35,7 @@ technologies as implementation adapters or authoritative reference points.
 | Priority | Concept slice | Why it is next | Candidate contracts |
 | --- | --- | --- | --- |
 | P0 — implemented | Domain-first catalog foundation | Prevents provider names and aggregate manifests from owning unrelated meaning | domain, product, approved-request, build-lifecycle, build-manifest, address-allocation, Infoblox adapter |
+| P1 | Discovery-to-AAP inventory supply chain | Removes avoidable report-processing delay while respecting report-only CMDB access | `inventory-source-export`, `inventory-snapshot`, `inventory-publication-result` |
 | P1 | Desired/observed configuration-item reconciliation | Directly addresses the gap between approved pre-build intent and discovery-only operational state | `configuration-item-intent`, `configuration-item-observation`, `configuration-item-reconciliation-result` |
 | P1 | Linux content and registration | Exercises independent agent registration, content policy, target facts, and Linux handoff evidence | `linux-content-registration-request`, `linux-content-registration-result`, `host-facts-snapshot` |
 | P1 | Windows endpoint management | Gives Windows a parallel management-enrollment and observed-inventory pattern | `endpoint-enrollment-request`, `endpoint-enrollment-result`, `endpoint-health-snapshot`, `hardware-inventory-snapshot` |
@@ -43,11 +44,41 @@ technologies as implementation adapters or authoritative reference points.
 | P3 | Common operational capabilities | Tests reusable patterns after Satellite and endpoint management establish the boundary | monitoring, backup, security, certificate, directory, and decommission contracts |
 
 P1 items can be designed in parallel, but the recommended implementation order
-is CMDB reconciliation first, then one Linux and one Windows enrollment slice.
-That produces an immediately useful desired-versus-observed story while
+is the constrained inventory supply chain, CMDB reconciliation, then one Linux
+and one Windows enrollment slice. That first removes avoidable latency inside
+the automation boundary, then proves the desired-versus-observed model while
 preserving Windows/Linux parity.
 
-## Candidate 1: configuration-item reconciliation
+## Candidate 1: discovery-to-AAP inventory supply chain
+
+Do not make the source report an implicit AAP inventory format. Separate:
+
+- **inventory source export** — source/report identity, production time,
+  delivery identity, checksum, schema version, and raw artifact reference
+- **inventory snapshot** — accepted normalized records, observation times,
+  stable identity, freshness, eligibility, and allowlisted targeting metadata
+- **inventory publication result** — accepted/rejected counts, current
+  projection, last-known-good decision, AAP synchronization result, and
+  evidence references
+
+The report adapter can be vendor-specific. The snapshot consumed by AAP should
+not be. This permits a scheduled reporting extract today and a supported CMDB
+query or changed-CI feed later without redefining every automation consumer.
+
+Suggested POC:
+
+1. Read a synthetic IBI/WebFOCUS-style CSV fixture.
+2. Retain the immutable raw report with production and receipt times.
+3. Validate schema, source age, identity, duplicates, and completeness.
+4. Quarantine invalid input and retain the last-known-good projection.
+5. Publish a deterministic Windows/Linux AAP inventory projection.
+6. Test replay, partial transfer, stale input, identity collision, and
+   inventory-sync failure.
+
+The complete pattern is described in
+[Discovery-to-automation awareness](discovery-to-automation-awareness.md).
+
+## Candidate 2: configuration-item reconciliation
 
 Do not create one giant `cmdb` contract. Separate:
 
@@ -57,9 +88,13 @@ Do not create one giant `cmdb` contract. Separate:
   source
 - **reconciliation result** — matches, differences, authority decisions,
   unresolved identities, and handoff disposition
+- **CMDB adapter** — transforms the neutral representation to a supported
+  source-dataset or identification-and-reconciliation interface
+- **BMC Helix adapter** — writes an automation-owned source dataset and relies
+  on CMDB identification and reconciliation rather than updating the
+  production dataset directly
 - **ServiceNow adapter** — transforms the neutral representation to an
-  Identification and Reconciliation Engine payload if write access is later
-  permitted
+  Identification and Reconciliation Engine payload
 
 This split reflects a documented CMDB concern: identification determines
 whether a CI is new or matches an existing CI, while reconciliation controls
@@ -76,7 +111,7 @@ Suggested POC:
 5. Emit a reconciliation result without writing a CMDB.
 6. Gate handoff on required matches and explain acceptable differences.
 
-## Candidate 2: Red Hat Satellite and RHSM facts
+## Candidate 3: Red Hat Satellite and RHSM facts
 
 Treat Satellite as the adapter for a Linux content-management capability.
 Model at least two boundaries:
@@ -99,7 +134,7 @@ content-management capability. That capability owns registration and facts
 contracts because it has an independent owner, identity, lifecycle, provider
 API, and handoff evidence.
 
-## Candidate 3: Microsoft Configuration Manager
+## Candidate 4: Microsoft Configuration Manager
 
 Treat Microsoft Configuration Manager as the adapter for a Windows
 endpoint-management capability. Candidate boundaries are:
@@ -117,7 +152,7 @@ monitoring, and scheduled hardware inventory sent by the client. Those are
 separate desired, result, and observed boundaries; folding them into the
 generic Windows server contract would hide ownership and refresh behavior.
 
-## Candidate 4: F5 BIG-IP application delivery
+## Candidate 5: F5 BIG-IP application delivery
 
 The domain contract should express an application-delivery service, not an AS3
 payload:

@@ -83,6 +83,47 @@ using a local job to launch an unmanaged persistent control layer.
   techniques. The architecture concern is where the true execution and state
   boundaries reside.
 
+## Discovery, CMDB reconciliation, and inventory supply chains
+
+These sources support the three-horizon pattern in
+[Discovery-to-automation awareness](discovery-to-automation-awareness.md):
+make the report-only path observable, publish a governed AAP inventory
+projection, and later add automation as a reconciled CMDB source.
+
+- [OpenText Universal Discovery and CMDB architecture](https://docs.microfocus.com/doc/UCMDB/24.4/Architecture) -
+  the relationship between Universal Discovery, probes, infrastructure
+  observations, and UCMDB.
+- [OpenText Universal Discovery and CMDB glossary](https://docs.microfocus.com/doc/UCMDB/24.2/GlossaryCMS) -
+  agent-based inventory collection and the distinction between discovery and
+  CMDB capabilities.
+- [TIBCO WebFOCUS ReportCaster guide](https://docs.tibco.com/pub/wf-wf/9.3.6/doc/pdf/IBI_wf-wf_9.3.6_reportcaster_guide.pdf?id=6) -
+  scheduled report distribution options including FTP and SFTP. This supports
+  a managed landing-zone pattern; it does not prove direct S3 delivery.
+- [BMC Helix CMDB datasets](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac254/Getting-started/Key-concepts/Datasets-to-partition-data/) -
+  source-specific and staging datasets, production `BMC.ASSET`, and the
+  explicit warning not to update the production dataset directly.
+- [BMC Helix CMDB dataset best practices](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac252/Administering/Managing-data-sources-and-datasets-in-BMC-Helix-CMDB/Best-practices-for-managing-datasets/) -
+  one source per writable dataset and reconciliation into the production
+  dataset.
+- [BMC Helix CMDB reconciliation planning](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac252/Planning/Planning-data-reconciliation/) -
+  identification, merge, and source or attribute precedence across datasets.
+- [BMC Helix CMDB REST API overview](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac251/Developing/Using-BMC-Helix-CMDB-functions-in-an-external-application-with-the-REST-API/Learning-about-the-REST-API/Overview-of-the-REST-API/) -
+  supported external create, search, update, retrieval, notification, and
+  changed-CI capabilities. Permissions and reconciliation design remain local
+  governance decisions.
+- [AAP 2.5 inventories](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-inventories) -
+  inventory sources, schedules, `Update on launch`, and cache timeout behavior.
+- [Automation controller best practices](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/assembly-controller-best-practices) -
+  recommends a defined dynamic inventory synchronization process when an
+  external CMDB is the source of truth.
+- [Ansible dynamic inventory](https://docs.ansible.com/projects/ansible/latest/inventory_guide/intro_dynamic_inventory.html) -
+  inventory plugins and scripts for external sources.
+- [Developing Ansible inventory plugins](https://docs.ansible.com/projects/ansible/latest/dev_guide/developing_inventory.html) -
+  the plugin interface and optional inventory caching for a reusable adapter.
+- [Ansible cache plugins](https://docs.ansible.com/projects/ansible/latest/plugins/cache.html) -
+  caching mechanisms for inventory and facts when external retrieval is
+  expensive.
+
 ## Event-driven launches
 
 Event-Driven Ansible is an optional maturity step, not a requirement for the
@@ -169,6 +210,10 @@ These product sources support the premises and boundaries in
 
 ### CMDB identification and reconciliation
 
+- [BMC Helix CMDB datasets](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac254/Getting-started/Key-concepts/Datasets-to-partition-data/) -
+  source-owned datasets and reconciliation into the production dataset.
+- [BMC Helix CMDB reconciliation planning](https://docs.bmc.com/xwiki/bin/view/Service-Management/IT-Service-Management/BMC-Helix-CMDB/ac252/Planning/Planning-data-reconciliation/) -
+  identification, merge, and precedence across multiple providers.
 - [ServiceNow IRE components and process](https://www.servicenow.com/docs/r/servicenow-platform/configuration-management-database-cmdb/c_CompsandProcessIDandReconcil.html) -
   identification, reconciliation, authoritative sources, duplicate handling,
   and the centralized API path.
