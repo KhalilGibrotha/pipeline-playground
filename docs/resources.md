@@ -140,6 +140,10 @@ through the controller API.
 
 ## Development environments and runtime parity
 
+- [AAP 2.6 platform services](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/whats_new-platform_intro) -
+  identifies `ansible-core` 2.16 as the AAP 2.6 control-plane and automation
+  execution version. The POC development constraints use this as their runtime
+  compatibility baseline.
 - [Using Ansible development workspaces](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html-single/using_ansible_development_workspaces_for_automation_content_development/index) -
   Red Hat guidance for Ansible development tools in OpenShift Dev Spaces.
   Verify the support or Technology Preview status for the installed AAP

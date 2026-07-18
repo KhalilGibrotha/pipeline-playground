@@ -29,4 +29,4 @@
     - name: Assert verified network selector
       ansible.builtin.assert:
         that:
-          - network_selector == 'application-internal_test_internal'
+          - contract_preflight_network_selector == 'application-internal_test_internal'

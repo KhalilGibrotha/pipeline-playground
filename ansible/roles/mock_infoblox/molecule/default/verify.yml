@@ -5,7 +5,7 @@
   tasks:
     - name: Load generated host-record payload
       ansible.builtin.set_fact:
-        generated_host_record: >-
+        mock_infoblox_generated_host_record: >-
           {{
             lookup(
               'ansible.builtin.file',
@@ -18,13 +18,13 @@
       ansible.builtin.stat:
         path: >-
           {{ molecule_ephemeral_directory }}/artifacts/REQ-MOLECULE-NO-SUBNET-host-record.json
-      register: failed_request_artifact
+      register: mock_infoblox_failed_request_artifact
 
     - name: Assert allocation and payload evidence
       ansible.builtin.assert:
         that:
-          - generated_host_record.name == 'molecule-001.example.test'
-          - generated_host_record.ipv4addrs[0].ipv4addr == '192.0.2.42'
-          - generated_host_record.extattrs.NetworkProfile.value == 'application-internal'
-          - generated_host_record.extattrs.RequestID.value == 'REQ-MOLECULE-0001'
-          - not failed_request_artifact.stat.exists
+          - mock_infoblox_generated_host_record.name == 'molecule-001.example.test'
+          - mock_infoblox_generated_host_record.ipv4addrs[0].ipv4addr == '192.0.2.42'
+          - mock_infoblox_generated_host_record.extattrs.NetworkProfile.value == 'application-internal'
+          - mock_infoblox_generated_host_record.extattrs.RequestID.value == 'REQ-MOLECULE-0001'
+          - not mock_infoblox_failed_request_artifact.stat.exists

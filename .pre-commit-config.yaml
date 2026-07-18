@@ -1,0 +1,28 @@
+minimum_pre_commit_version: "3.5.0"
+
+repos:
+  - repo: local
+    hooks:
+      - id: repository-hygiene
+        name: Repository privacy, encoding, and artifact checks
+        entry: python3 scripts/check_repository_hygiene.py
+        language: system
+        pass_filenames: true
+        always_run: true
+        stages: [pre-commit]
+
+      - id: catalog-fixtures
+        name: Data catalog and manifest fixture validation
+        entry: python3 scripts/validate_manifest_fixtures.py
+        language: system
+        pass_filenames: false
+        files: ^(catalog/|scripts/validate_manifest_fixtures\.py$)
+        stages: [pre-commit]
+
+      - id: full-validation
+        name: Full automation validation
+        entry: bash scripts/validate.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

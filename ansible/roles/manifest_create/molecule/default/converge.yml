@@ -55,15 +55,15 @@
 
         - name: Record unexpected acceptance
           ansible.builtin.set_fact:
-            invalid_event_rejected: false
+            manifest_create_invalid_event_rejected: false
 
       rescue:
         - name: Record expected rejection
           ansible.builtin.set_fact:
-            invalid_event_rejected: true
+            manifest_create_invalid_event_rejected: true
 
     - name: Assert incompatible platform input was rejected
       ansible.builtin.assert:
         that:
-          - invalid_event_rejected | bool
+          - manifest_create_invalid_event_rejected | bool
         fail_msg: Incompatible OS family and version unexpectedly produced a manifest.

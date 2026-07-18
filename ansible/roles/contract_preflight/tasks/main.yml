@@ -35,5 +35,5 @@
 
 - name: Derive provider-neutral network selector
   ansible.builtin.set_fact:
-    network_selector: >-
+    contract_preflight_network_selector: >-
       {{ network_profile | lower }}_{{ application_environment | lower }}_{{ data_classification | lower }}

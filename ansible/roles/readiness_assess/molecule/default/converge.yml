@@ -32,7 +32,7 @@
 
     - name: Retain Windows report
       ansible.builtin.set_fact:
-        molecule_windows_report: "{{ readiness_assess_report }}"
+        readiness_assess_molecule_windows_report: "{{ readiness_assess_report }}"
 
     - name: Assess Linux operational gate
       ansible.builtin.include_role:
@@ -46,10 +46,10 @@
     - name: Assert platform-neutral blockers
       ansible.builtin.assert:
         that:
-          - molecule_windows_report.status.blockerCount | int == 2
+          - readiness_assess_molecule_windows_report.status.blockerCount | int == 2
           - readiness_assess_report.status.blockerCount | int == 3
           - >-
-            molecule_windows_report.status.blockers[0].decisionOwner
+            readiness_assess_molecule_windows_report.status.blockers[0].decisionOwner
             == 'network-platform'
           - >-
             readiness_assess_report.status.blockers[0].decisionOwner

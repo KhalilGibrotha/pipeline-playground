@@ -1,6 +1,6 @@
 schemaVersion: 2.2.0
 metadata:
-  name: data-contract-catalog-poc
+  name: pipeline-playground
 components:
   - name: tools
     container:
@@ -15,13 +15,24 @@ commands:
     exec:
       component: tools
       commandLine: >-
-        python3 -m pip install --user ansible-core ansible-dev-tools ansible-lint molecule yamllint jmespath jsonschema
+        python3 -m pip install --user --requirement requirements-dev.txt
       workingDir: ${PROJECT_SOURCE}
   - id: show-versions
     exec:
       component: tools
       commandLine: >-
         bash -lc "ansible --version && ansible-lint --version && molecule --version && yamllint --version"
+      workingDir: ${PROJECT_SOURCE}
+  - id: validate
+    exec:
+      component: tools
+      commandLine: bash scripts/validate.sh
+      workingDir: ${PROJECT_SOURCE}
+  - id: test-readiness-lifecycle
+    exec:
+      component: tools
+      commandLine: >-
+        bash -lc "cd ansible && ansible-playbook playbooks/test-readiness-lifecycle.yml"
       workingDir: ${PROJECT_SOURCE}
   - id: shell
     exec:

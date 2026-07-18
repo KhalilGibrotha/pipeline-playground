@@ -143,19 +143,19 @@ cd ansible
 ansible-playbook playbooks/test-readiness-lifecycle.yml
 ```
 
-Run the role-level Molecule scenario:
+Run the WSL/Linux validation path:
 
 ```bash
-cd ansible
-for role in roles/*; do
-  (cd "$role" && molecule test)
-done
+bash scripts/validate.sh
 ```
 
-The fixture relationships can also be checked from a Windows-native Python shell:
+The script runs YAML lint, fixture validation, Ansible lint, the manifest and
+readiness regressions, and every Molecule scenario when Molecule is installed.
+
+Run only the fixture relationship check:
 
 ```bash
-python scripts/validate_manifest_fixtures.py
+python3 scripts/validate_manifest_fixtures.py
 ```
 
 The local artifact layout mirrors the proposed object-store keys under `ansible/generated-vars/server-builds/`.

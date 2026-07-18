@@ -30,7 +30,7 @@
     - name: Assert deterministic network selector derivation
       ansible.builtin.assert:
         that:
-          - network_selector == 'application-internal_test_internal'
+          - contract_preflight_network_selector == 'application-internal_test_internal'
 
     - name: Verify invalid site is rejected
       block:
@@ -49,14 +49,14 @@
 
         - name: Record unexpected acceptance
           ansible.builtin.set_fact:
-            invalid_request_rejected: false
+            contract_preflight_invalid_request_rejected: false
 
       rescue:
         - name: Record expected rejection
           ansible.builtin.set_fact:
-            invalid_request_rejected: true
+            contract_preflight_invalid_request_rejected: true
 
     - name: Assert invalid request was rejected
       ansible.builtin.assert:
         that:
-          - invalid_request_rejected | bool
+          - contract_preflight_invalid_request_rejected | bool

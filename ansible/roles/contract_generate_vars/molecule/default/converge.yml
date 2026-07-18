@@ -15,5 +15,5 @@
         application_environment: test
         data_classification: internal
         dns_domain: example.test
-        network_selector: application-internal_test_internal
+        contract_preflight_network_selector: application-internal_test_internal
         generated_vars_dir: "{{ molecule_ephemeral_directory }}/artifacts"

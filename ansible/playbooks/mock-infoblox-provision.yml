@@ -43,7 +43,7 @@
         msg:
           request_id: "{{ request_id }}"
           hostname: "{{ hostname }}"
-          network_selector: "{{ network_selector }}"
-          selected_subnet: "{{ selected_subnet.network }}"
-          allocated_ip: "{{ allocated_ip }}"
-          generated_vars_file: "{{ generated_vars_file }}"
+          network_selector: "{{ contract_preflight_network_selector }}"
+          selected_subnet: "{{ mock_infoblox_selected_subnet.network }}"
+          allocated_ip: "{{ mock_infoblox_allocated_ip }}"
+          generated_vars_file: "{{ contract_generate_vars_file }}"

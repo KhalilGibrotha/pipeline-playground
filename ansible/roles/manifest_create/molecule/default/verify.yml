@@ -30,18 +30,18 @@
           - "{{ scenario_artifact_root }}/requests/REQ-DEMO-0003/events"
         patterns: "*-manifest-created.json"
         file_type: file
-      register: manifest_created_events
+      register: manifest_create_events
 
     - name: Check that invalid input produced no request artifacts
       ansible.builtin.stat:
         path: "{{ scenario_artifact_root }}/requests/REQ-DEMO-INVALID"
-      register: invalid_request_artifacts
+      register: manifest_create_invalid_request_artifacts
 
     - name: Assert deterministic, idempotent scenario results
       ansible.builtin.assert:
         that:
           - generated_windows_manifest == expected_windows_manifest
           - generated_linux_manifest == expected_linux_manifest
-          - manifest_created_events.matched == 2
-          - not invalid_request_artifacts.stat.exists
+          - manifest_create_events.matched == 2
+          - not manifest_create_invalid_request_artifacts.stat.exists
         fail_msg: Manifest artifacts did not match the role's expected behavior.

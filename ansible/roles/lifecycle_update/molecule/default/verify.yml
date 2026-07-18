@@ -21,7 +21,7 @@
           {{ molecule_ephemeral_directory }}/artifacts/requests/REQ-DEMO-0002/events
         patterns: EVT-MOLECULE-BLOCKED.json
         file_type: file
-      register: lifecycle_events
+      register: lifecycle_update_events
 
     - name: Find retained readiness report
       ansible.builtin.find:
@@ -29,7 +29,7 @@
           {{ molecule_ephemeral_directory }}/artifacts/requests/REQ-DEMO-0002/artifacts
         patterns: readiness-revision-5-networkIntegration.yaml
         file_type: file
-      register: readiness_reports
+      register: lifecycle_update_readiness_reports
 
     - name: Assert blocked revision and idempotent event evidence
       ansible.builtin.assert:
@@ -39,5 +39,5 @@
           - current_manifest.status.phase == 'infrastructure-provisioned'
           - current_manifest.status.outcome == 'blocked'
           - current_manifest.status.blockers | length == 2
-          - lifecycle_events.matched == 1
-          - readiness_reports.matched == 1
+          - lifecycle_update_events.matched == 1
+          - lifecycle_update_readiness_reports.matched == 1

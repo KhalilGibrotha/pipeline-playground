@@ -8,9 +8,23 @@ The toolchain should prove that content is reviewable, testable, reusable, and p
 
 ## Development environments
 
-### Windows workstation
+### WSL2 or Linux workstation
 
-Use the workstation for editing, Git, documentation, fixture development, and Podman-backed execution environments. Avoid making native Windows the Ansible control-node standard.
+Use WSL2 or Linux for editing, Git, fixture development, Ansible, Molecule, and
+Podman-backed execution environments. This is the preferred local control
+environment because Dev Spaces, CI runners, execution environments, and AAP
+execution nodes are Linux-based.
+
+Keep the repository in the Linux filesystem when practical, for example:
+
+```text
+$HOME/src/pipeline-playground
+```
+
+A checkout under `/mnt/c/` is acceptable during transition, but Windows-mounted
+storage and synchronization tools can add filesystem latency and different
+permission semantics. Do not keep virtual environments, container storage, or
+dependency caches in a synchronized Windows folder.
 
 The intended local loop is:
 
@@ -23,6 +37,44 @@ The intended local loop is:
 Kubernetes is optional for this POC. It becomes useful only if a component genuinely needs a service or cluster deployment.
 
 A local S3-compatible service is a valid first container experiment because it tests manifest keys, versions, events, and retries. It does not validate the enterprise endpoint's performance or compatibility.
+
+Create an isolated development environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install --requirement requirements-dev.txt
+pre-commit install --hook-type pre-commit --hook-type pre-push
+```
+
+The development and execution-environment requirements constrain
+`ansible-core` to the 2.16 release family used by the AAP 2.6 control plane and
+built-in execution environments. Upgrade that compatibility baseline as an
+intentional, tested change rather than allowing CI to select a newer core
+release automatically.
+
+If the Codex desktop agent runs in WSL2, install `bubblewrap` so the Linux
+sandbox can start:
+
+```bash
+sudo apt-get update
+sudo apt-get install bubblewrap
+```
+
+Codex documents that changing the agent from Windows native to WSL requires an
+app restart and that local setup scripts then run in the selected agent
+environment. See [ChatGPT desktop app for Windows](https://learn.chatgpt.com/docs/windows/windows-app.md#windows-subsystem-for-linux-wsl).
+
+### Native Windows companion
+
+Native Windows remains useful for PowerPoint, browser-based reviews, and
+workstation-specific validation. It should not be the primary Ansible control
+environment.
+
+The Codex integrated terminal and agent environment are independent settings.
+A WSL agent can be paired with either a WSL or PowerShell terminal, but project
+commands in this repository are maintained as Bash-first.
 
 ### OpenShift Dev Spaces
 
@@ -126,15 +178,12 @@ This makes sharing achievable without turning the POC into a collection-governan
 ## Suggested first commands
 
 ```bash
-yamllint .
-python scripts/validate_manifest_fixtures.py
-ansible-lint ansible/
-cd ansible
-ansible-playbook playbooks/test-manifest-creation.yml
-ansible-playbook playbooks/mock-infoblox-provision.yml -e @vars/request-good.yml
-cd roles/manifest_create
-molecule test
+bash scripts/validate.sh
 ```
+
+Repository privacy, encoding, and AI-artifact checks are documented separately
+in [Repository quality controls](repository-quality-controls.md). They are
+source-governance safeguards rather than components of the POC architecture.
 
 Once an execution-environment image is available:
 

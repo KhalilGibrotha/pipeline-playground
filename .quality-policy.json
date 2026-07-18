@@ -1,0 +1,8 @@
+{
+  "blocked_token_sha256": [
+    {
+      "sha256": "7c51e4a3a6e81a40194f46bdf9d323c8727be28e55eba2aa32f3a590799f833d",
+      "reason": "prohibited organization identifier"
+    }
+  ]
+}

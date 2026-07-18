@@ -39,17 +39,16 @@ owned mappings.
 
 ### 3. Create a manifest
 
-From the repository root in PowerShell:
+From the repository root in WSL or Linux:
 
-```powershell
-$repo = (Get-Location).Path
-$podman = "$env:LOCALAPPDATA\Programs\Podman\podman.exe"
+```bash
+repo="$(pwd)"
 
-& $podman run --rm `
-  --env ANSIBLE_ROLES_PATH=/workspace/ansible/roles `
-  --volume "${repo}:/workspace:Z" `
-  --workdir /workspace/ansible `
-  localhost/pipeline-playground-ee:dev `
+podman run --rm \
+  --env ANSIBLE_ROLES_PATH=/workspace/ansible/roles \
+  --volume "${repo}:/workspace:Z" \
+  --workdir /workspace/ansible \
+  localhost/pipeline-playground-ee:dev \
   ansible-playbook playbooks/create-build-manifest.yml
 ```
 
@@ -64,12 +63,12 @@ Use slides 4 and 5 of the engineering walkthrough.
 
 Run the blocked-to-ready lifecycle regression:
 
-```powershell
-& $podman run --rm `
-  --env ANSIBLE_ROLES_PATH=/workspace/ansible/roles `
-  --volume "${repo}:/workspace:Z" `
-  --workdir /workspace/ansible `
-  localhost/pipeline-playground-ee:dev `
+```bash
+podman run --rm \
+  --env ANSIBLE_ROLES_PATH=/workspace/ansible/roles \
+  --volume "${repo}:/workspace:Z" \
+  --workdir /workspace/ansible \
+  localhost/pipeline-playground-ee:dev \
   ansible-playbook playbooks/test-readiness-lifecycle.yml
 ```
 
@@ -82,12 +81,12 @@ Call out four results:
 
 If time permits, run the original creation regression:
 
-```powershell
-& $podman run --rm `
-  --env ANSIBLE_ROLES_PATH=/workspace/ansible/roles `
-  --volume "${repo}:/workspace:Z" `
-  --workdir /workspace/ansible `
-  localhost/pipeline-playground-ee:dev `
+```bash
+podman run --rm \
+  --env ANSIBLE_ROLES_PATH=/workspace/ansible/roles \
+  --volume "${repo}:/workspace:Z" \
+  --workdir /workspace/ansible \
+  localhost/pipeline-playground-ee:dev \
   ansible-playbook playbooks/test-manifest-creation.yml
 ```
 
@@ -106,11 +105,11 @@ Use slide 7 of the engineering walkthrough.
 
 Run one representative role scenario:
 
-```powershell
-& $podman run --rm `
-  --volume "${repo}:/workspace:Z" `
-  --workdir /workspace/ansible/roles/manifest_create `
-  localhost/pipeline-playground-ee:dev `
+```bash
+podman run --rm \
+  --volume "${repo}:/workspace:Z" \
+  --workdir /workspace/ansible/roles/manifest_create \
+  localhost/pipeline-playground-ee:dev \
   molecule test
 ```
 
@@ -133,7 +132,7 @@ operating model and pilot decision.
 
 ## Demo prerequisites
 
-- Podman machine running
+- Linux or WSL Podman available and `podman info` succeeds
 - local image `localhost/pipeline-playground-ee:dev`
 - repository checked out with synthetic fixtures
 - PowerPoint brief available under `outputs/`
@@ -149,11 +148,14 @@ For a deeper architecture discussion, use:
 
 Build the local image when needed:
 
-```powershell
-& "$env:LOCALAPPDATA\Programs\Podman\podman.exe" build `
-  --tag localhost/pipeline-playground-ee:dev `
+```bash
+podman build \
+  --tag localhost/pipeline-playground-ee:dev \
   execution-environment
 ```
+
+On native Windows, the same container arguments can be passed to `podman.exe`,
+but the maintained demonstration path is WSL/Linux or Dev Spaces.
 
 ## No-runtime fallback
 

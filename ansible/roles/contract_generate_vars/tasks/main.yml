@@ -1,7 +1,7 @@
 ---
 - name: Build normalized contract vars
   ansible.builtin.set_fact:
-    generated_contract_vars:
+    contract_generate_vars_payload:
       request:
         request_id: "{{ request_id }}"
         application_id: "{{ application_id }}"
@@ -13,14 +13,14 @@
         data_classification: "{{ data_classification }}"
         dns_domain: "{{ dns_domain }}"
       derived:
-        network_selector: "{{ network_selector | default('') }}"
+        network_selector: "{{ contract_preflight_network_selector | default('') }}"
 
 - name: Set generated vars file path
   ansible.builtin.set_fact:
-    generated_vars_file: "{{ generated_vars_dir }}/{{ request_id }}-contract-vars.yml"
+    contract_generate_vars_file: "{{ generated_vars_dir }}/{{ request_id }}-contract-vars.yml"
 
 - name: Write normalized contract vars artifact
   ansible.builtin.copy:
-    dest: "{{ generated_vars_file }}"
-    content: "{{ generated_contract_vars | to_nice_yaml }}"
+    dest: "{{ contract_generate_vars_file }}"
+    content: "{{ contract_generate_vars_payload | to_nice_yaml }}"
     mode: "0644"

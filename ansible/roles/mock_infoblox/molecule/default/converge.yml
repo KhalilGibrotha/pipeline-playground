@@ -43,14 +43,14 @@
 
         - name: Record unexpected subnet match
           ansible.builtin.set_fact:
-            no_subnet_rejected: false
+            mock_infoblox_no_subnet_rejected: false
 
       rescue:
         - name: Record expected subnet rejection
           ansible.builtin.set_fact:
-            no_subnet_rejected: true
+            mock_infoblox_no_subnet_rejected: true
 
     - name: Assert missing subnet was rejected
       ansible.builtin.assert:
         that:
-          - no_subnet_rejected | bool
+          - mock_infoblox_no_subnet_rejected | bool

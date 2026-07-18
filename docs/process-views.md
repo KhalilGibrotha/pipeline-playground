@@ -129,7 +129,7 @@ The reusable interface is the common outcome of each phase, not identical task i
 
 ```mermaid
 flowchart LR
-    A["Developer<br/>Windows workstation or Dev Spaces"] --> B["Git branch and pull request"]
+    A["Developer<br/>WSL/Linux workstation or Dev Spaces"] --> B["Git branch and pull request"]
     B --> C["Fast checks<br/>YAML + fixtures + Ansible lint"]
     C --> D["Behavior tests<br/>Podman execution environment"]
     D --> E["Versioned role or collection artifact"]
