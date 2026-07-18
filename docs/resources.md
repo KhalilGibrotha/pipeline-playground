@@ -58,6 +58,31 @@ and exit. A later event or schedule launches the next short run.
   API entry point for launching and inspecting controller resources. This is a
   likely integration surface for an approved request system.
 
+## Execution ownership and network placement
+
+These references support the distinction between legitimate local API work and
+using a local job to launch an unmanaged persistent control layer.
+
+- [Jobs in automation controller](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-jobs) -
+  each job receives a private project directory that is temporary and removed
+  at the end of the run. Durable build state therefore belongs outside the job
+  filesystem.
+- [Execution environments](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/assembly-controller-execution-environments) -
+  container images for the system-level dependencies and collection content
+  required by a job.
+- [Automation mesh node types](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_mesh_for_managed_cloud_or_operator_environments/assembly-automation-mesh-operator-aap) -
+  registered execution nodes run jobs and hop nodes transport traffic to
+  otherwise unreachable execution nodes.
+- [Instance and container groups](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-instance-and-container-groups) -
+  controller placement mechanisms for associating execution capacity with job
+  templates, inventories, and organizations.
+- [Controller credentials](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-credentials) -
+  managed credential injection, including documented jump-host patterns.
+- [Delegation and local actions](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_delegation.html) -
+  upstream guidance showing that local and delegated tasks are valid Ansible
+  techniques. The architecture concern is where the true execution and state
+  boundaries reside.
+
 ## Event-driven launches
 
 Event-Driven Ansible is an optional maturity step, not a requirement for the

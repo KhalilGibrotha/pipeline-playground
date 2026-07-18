@@ -49,6 +49,8 @@ operational state.
 6. Windows and Linux lifecycle behavior drifts even where requirements are common.
 7. Shared folders and CSV files are slow, difficult to automate, and weak at retaining provenance.
 8. Handoffs do not identify completed work, blockers, evidence, reconciliation, or the next owner.
+9. AAP jobs can become thin launchers for a persistent shadow execution host, leaving dependencies, state, and the true execution path outside the platform boundary.
+10. VMs can be created in a temporary cluster with temporary network values, then readdressed and relocated after final placement data arrives.
 
 ## Artifact model
 
@@ -95,6 +97,8 @@ It covers:
 - purpose-built execution environment
 - local Podman and OpenShift Dev Spaces workflow
 - generated readiness, reconciliation, and handoff evidence
+- explicit AAP execution boundaries for local API work and segmented-network work
+- a readiness gate that prefers final VMware placement before VM creation
 
 ## Deferred until the first path is proven
 
@@ -168,8 +172,11 @@ It covers:
 
 - Which approval event authorizes manifest creation?
 - Which system coordinates active phase transitions and prevents concurrent updates?
+- Which work legitimately runs locally in an execution environment, and which work requires a managed execution node near the target?
+- Which dependencies and state must be removed from persistent bastion or utility hosts?
 - Which system owns each required input?
 - What is a safe VMware holding state at each blocked phase?
+- Which network and placement facts must be ready before a VM is created?
 - Which defaults and mappings are platform standards?
 - Which desired values must reconcile with discovery before handoff?
 - How long are manifests and evidence retained?

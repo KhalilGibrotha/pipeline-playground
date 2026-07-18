@@ -12,6 +12,8 @@ A server request may be approved before every downstream integration value is av
 - intended build data being scattered across tickets, CSV files, shared folders, inventories, and playbooks
 - a discovery-only CMDB seeing a machine after creation but not preserving its approved intent or build history
 - automation developers deciding values that should have an accountable business or platform owner
+- AAP jobs acting as launchers for a persistent shadow execution host, hiding dependencies, state, and the true execution boundary
+- VMs being created with temporary placement and network values, then readdressed and relocated after final data arrives
 - Windows and Linux teams implementing similar lifecycle behavior differently
 - handoffs that do not clearly state what is complete, blocked, or still owned by another group
 
@@ -71,6 +73,7 @@ S3-compatible artifact adapter.
 
 - [docs/poc-overview.md](docs/poc-overview.md) - scope, outcomes, and maturity stages
 - [docs/server-build-poc.md](docs/server-build-poc.md) - Windows/Linux VMware test case
+- [docs/server-build-antipatterns.md](docs/server-build-antipatterns.md) - shadow execution, temporary provisioning, target patterns, and migration evidence
 - [docs/architecture.md](docs/architecture.md) - state, artifact, adapter, and handoff boundaries
 - [docs/process-views.md](docs/process-views.md) - complementary Mermaid views for leadership, architecture, and development discussions
 - [docs/demo-runbook.md](docs/demo-runbook.md) - ten-minute engineering demonstration and reusable concept-lab pattern
@@ -89,12 +92,15 @@ S3-compatible artifact adapter.
 
 ## Presentation assets
 
-- [Leadership overview](outputs/pipeline-playground-leadership-brief.pptx) -
+- [Leadership overview](outputs/server-build-automation-modernization-leadership-brief.pptx) -
   problem framing, data contracts as code, the build manifest, the logical AAP
   workflow, proven outcomes, and a focused pilot decision.
-- [Engineering walkthrough](outputs/pipeline-playground-engineering-demo.pptx) -
+- [Engineering walkthrough](outputs/server-build-automation-modernization-engineering-brief.pptx) -
   repository layers, lifecycle roles, workflow nodes, testing gates, test
   responsibilities, and the next S3-compatible adapter increment.
+- [Architecture discussion](outputs/server-build-automation-modernization-architecture-discussion.pptx) -
+  shadow execution, legitimate local jobs, automation mesh boundaries,
+  temporary VMware staging, and the target readiness-gated flow.
 
 ## Current mock quick start
 

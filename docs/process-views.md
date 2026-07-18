@@ -162,3 +162,74 @@ flowchart LR
 
 Workflow success, failure, and always paths coordinate the jobs. They do not
 replace the manifest and lifecycle events as the portable record of state.
+
+## 7. Current-state execution view: the hidden control boundary
+
+This view isolates the concern with `localhost`. Local API work is legitimate;
+the problem is using the execution environment as a relay to an unmanaged
+persistent execution layer.
+
+```mermaid
+flowchart LR
+    A["AAP workflow and job template"] --> B["Execution environment<br/>play targets localhost"]
+    B --> C["Persistent bastion or utility host<br/>scripts + libraries + working state"]
+    C --> D["Monolithic playbook"]
+    D --> E["VMware, inventory, and server targets"]
+
+    C -. "state and retry context outside AAP" .-> F["Hidden execution boundary"]
+    D -. "large failure domain" .-> F
+```
+
+## 8. Target execution view: governed placement and durable state
+
+This view shows the two legitimate execution paths. API modules can run locally
+inside the execution environment. Work that must run near segmented networks
+can use registered automation mesh execution and hop nodes.
+
+```mermaid
+flowchart LR
+    A["Approved event or resume trigger"] --> B["AAP workflow"]
+    B --> C["Focused job template"]
+    C --> D["Versioned execution environment"]
+    D -->|API-oriented local work| E["VMware, IPAM, or service API"]
+    D -->|segmented target work| F["Automation mesh<br/>hop + execution node"]
+    F --> G["Windows or Linux target"]
+
+    B <--> H["Manifest projection"]
+    C --> I["Lifecycle event and evidence"]
+    H --> J["S3-compatible artifact storage"]
+    I --> J
+```
+
+The target is not that every play must name a remote host. The target is that
+dependencies, credentials, targeting, execution placement, state, and evidence
+have explicit owners and governed homes.
+
+## 9. Provisioning decision view: wait as data or wait as infrastructure
+
+This comparison explains why the manifest should be created before the VM while
+VM creation normally waits for final network and placement readiness.
+
+```mermaid
+flowchart TB
+    subgraph Current["Current temporary-infrastructure path"]
+        A1["Request approved"] --> B1["Assign temporary IP"]
+        B1 --> C1["Build VM in staging cluster"]
+        C1 --> D1["Wait for final network and placement"]
+        D1 --> E1["Readdress and relocate VM"]
+        E1 --> F1["Configure and hand off"]
+    end
+
+    subgraph Target["Target readiness-gated path"]
+        A2["Request approved"] --> B2["Create manifest"]
+        B2 --> C2{"Final network and placement ready?"}
+        C2 -->|No| D2["Persist blocker, owner, safe state, and resume phase"]
+        D2 --> C2
+        C2 -->|Yes| E2["Provision directly in target placement"]
+        E2 --> F2["Configure, reconcile, and hand off"]
+    end
+```
+
+If the organization requires a holding VM, model it as an explicit state with
+isolation, expiry, cleanup, relocation testing, and reconciliation rather than
+allowing the staging area to remain an accidental production dependency.

@@ -55,6 +55,19 @@ It is not automatically well suited to:
 
 Use one active coordinator and a defined concurrency strategy. Build a search index or query service later only if object-prefix and metadata searches are insufficient.
 
+### AAP should own the visible execution boundary
+
+Running API-oriented tasks against `localhost` inside an execution environment
+is valid. The anti-pattern is using that local job only to launch a persistent
+host that owns the real scripts, dependencies, state, targeting, and retry
+context.
+
+Dependencies belong in a versioned execution environment. Inventory,
+credentials, limits, job history, and execution placement should remain visible
+through AAP resources. When network segmentation requires execution closer to
+targets, evaluate registered automation mesh execution and hop nodes rather
+than preserving an unmanaged shadow control node.
+
 ## Problem-to-pattern fit
 
 | Observed problem | Pattern to test | POC evidence |
@@ -66,6 +79,8 @@ Use one active coordinator and a defined concurrency strategy. Build a search in
 | Windows/Linux flows drift | common lifecycle with platform adapters | shared tests run against both profiles |
 | VMware details leak into orchestration | provider adapter | mock and real provider share an interface |
 | Shared folder/CSV tracking is slow | API-driven object artifacts | measured latency, history, and concurrency comparison |
+| AAP launches a persistent shadow control node | versioned EE, focused job templates, governed execution placement, durable artifacts | dependencies removed from utility host and phase results visible in AAP |
+| VM is built with temporary IP and placement, then moved | gate creation on final network and placement readiness | blocked request remains durable without requiring a half-built VM |
 | Automation cannot be shared | focused roles, documented interfaces, then collections | second consumer uses a role without copying it |
 | Handoffs are chaotic | final snapshot and named next owner | readable completion/reconciliation record |
 
@@ -98,6 +113,19 @@ Linux targets when provider and operating-system roles are added.
 ### Execution environments support runtime parity
 
 Execution environments and `ansible-navigator` support a common dependency model for Podman, Dev Spaces, CI, and AAP. Native Windows should not become the Ansible control-node standard.
+
+AAP job project directories are temporary and removed after the job. That is a
+reason to package dependencies in the execution environment and retain
+business state in durable artifacts; it is not a reason to create an
+unmanaged persistent control node.
+
+### Automation mesh supports governed network placement
+
+AAP can schedule work on registered execution nodes and use hop nodes to reach
+otherwise inaccessible execution nodes. This provides an explicit platform
+boundary for segmented networks. A hop node transports mesh traffic, while an
+execution node runs jobs; neither should become an informal store for build
+state or unversioned automation content.
 
 ### S3-compatible access is feasible but must be tested
 
@@ -142,6 +170,8 @@ distributed concurrency or object-store conditional writes.
 8. Local artifact layout matching an eventual S3 prefix layout.
 9. Thin playbooks, focused roles, provider adapters, and OS adapters.
 10. A purpose-built execution environment, mandatory role-level Molecule scenarios, and minimal CI checks.
+11. Explicit criteria for legitimate local API work versus managed remote execution.
+12. Final-placement readiness before VM creation unless a governed holding state is intentionally approved.
 
 ## Prove next
 
@@ -151,6 +181,8 @@ distributed concurrency or object-store conditional writes.
 4. Can simulated VMware and CMDB values be reconciled with desired state?
 5. Can local object storage outperform and out-trace a representative shared-folder/CSV flow?
 6. Can the same tests run locally and in CI?
+7. Can one monolithic shadow-host path be split into observable AAP workflow phases?
+8. Can a build remain blocked as a manifest without creating a temporary VM?
 
 ## Defer
 
@@ -175,6 +207,20 @@ Creating the manifest at approval is useful even when later fields are missing. 
 The organization must decide whether a blocked VM is uncreated, powered off, isolated, attached to a staging network, or partially configured. It must also define access, expiration, cleanup, owner, and resume event.
 
 Automation can otherwise make an unsafe waiting queue faster.
+
+The preferred default is to create the manifest at approval and wait to create
+the VM until final placement and network data are ready. If a staging VM is
+unavoidable, relocation and readdressing become supported lifecycle
+transitions that require compatibility tests, reconciliation, expiry, and
+cleanup behavior.
+
+### Ephemeral jobs do not justify a shadow control node
+
+AAP intentionally gives each job a temporary private project directory.
+Durable request state, generated inputs, and evidence must therefore live in
+an artifact service. Runtime dependencies should live in the execution
+environment. Moving both concerns to a persistent utility host hides them from
+the platform rather than solving them.
 
 ### Idempotence does not replace workflow state
 
@@ -238,6 +284,10 @@ AAP surveys and extra vars transport values. Contracts, mappings, provenance, an
 - non-production VMware, Windows, Linux, IPAM, and S3-compatible targets
 - reusable collection maintainers and release expectations
 - AAP credential and environment boundaries
+- approved uses of local execution and delegation
+- automation mesh execution-node and hop-node requirements
+- dependencies and state currently retained on bastion or utility hosts
+- minimum network and placement facts required before VM creation
 
 ## Maturity checkpoints
 
@@ -274,6 +324,11 @@ Evaluate policy engines, portals, cross-domain cataloging, and broader release g
 
 - [Red Hat COP Automation Good Practices](https://redhat-cop.github.io/automation-good-practices/)
 - [Red Hat AAP 2.5 developing automation content](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/pdf/developing_automation_content/Red_Hat_Ansible_Automation_Platform-2.5-Developing_automation_content-en-US.pdf)
+- [Jobs in automation controller](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-jobs)
+- [Job templates](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-job-templates)
+- [Execution environments](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/assembly-controller-execution-environments)
+- [Automation mesh node types](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_mesh_for_managed_cloud_or_operator_environments/assembly-automation-mesh-operator-aap)
+- [Ansible delegation and local actions](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_delegation.html)
 - [Ansible Navigator documentation](https://docs.ansible.com/projects/navigator/)
 - [Developing Ansible collections](https://docs.ansible.com/projects/ansible/latest/dev_guide/developing_collections.html)
 - [Testing Ansible collections](https://docs.ansible.com/projects/ansible/latest/dev_guide/developing_collections_testing.html)

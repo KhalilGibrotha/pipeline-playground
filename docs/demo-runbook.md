@@ -140,8 +140,12 @@ operating model and pilot decision.
 
 The preferred presentation assets are:
 
-- `outputs/pipeline-playground-leadership-brief.pptx`
-- `outputs/pipeline-playground-engineering-demo.pptx`
+- `outputs/server-build-automation-modernization-leadership-brief.pptx`
+- `outputs/server-build-automation-modernization-engineering-brief.pptx`
+
+For a deeper architecture discussion, use:
+
+- `outputs/server-build-automation-modernization-architecture-discussion.pptx`
 
 Build the local image when needed:
 
