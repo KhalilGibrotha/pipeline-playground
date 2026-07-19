@@ -65,7 +65,7 @@ POC-specific shortcuts with reusable implementation evidence.
 | A5 | Flatten generated automation inputs | Ansible and inventory outputs use flat `snake_case` variables while durable manifests and event documents remain structured | A4 |
 | A6 | Add one cross-field policy gate | A generic OPA/Rego policy has passing and failing fixtures and runs after structural validation in CI | A2, A3 |
 | A7 | Formalize replay, reapproval, and concurrency | Tests cover exact replay, changed-payload identity conflicts, immutable approval evidence, manifest revisions, and conditional concurrent writes | A2 |
-| A8 | Make review artifacts reproducible | Core documents have public-safe metadata and purpose statements; Quarto sources generate editable PowerPoint output from a committed reference template | independent after A1 |
+| A8 | Make review artifacts reproducible | Core documents have public-safe metadata and purpose statements; Quarto sources generate editable PowerPoint output from a committed reference template; every new or materially revised slide completes a rendered second language-and-format review before publication | independent after A1 |
 
 The first implementation slice is A1 through A5: one ODCS-authored
 address-allocation contract becomes a generated schema, accepts corrected

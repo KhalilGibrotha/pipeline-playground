@@ -96,10 +96,10 @@ S3-compatible artifact adapter.
 
 ## Presentation assets
 
-- [Leadership overview](outputs/server-build-automation-modernization-leadership-brief.pptx) -
+- [Leadership overview](outputs/server-build-automation-modernization-leadership-brief-v2.pptx) -
   problem framing, data contracts as code, the build manifest, the logical AAP
   workflow, proven outcomes, and a focused pilot decision.
-- [Engineering walkthrough](outputs/server-build-automation-modernization-engineering-brief.pptx) -
+- [Engineering walkthrough](outputs/server-build-automation-modernization-engineering-brief-v2.pptx) -
   repository layers, lifecycle roles, workflow nodes, testing gates, test
   responsibilities, and the next S3-compatible adapter increment.
 - [Architecture discussion](outputs/server-build-automation-modernization-architecture-discussion.pptx) -
@@ -111,6 +111,20 @@ S3-compatible artifact adapter.
 - [Discovery-to-automation engineering brief](outputs/discovery-to-automation-awareness-engineering-brief.pptx) -
   representation boundaries, snapshot contracts, AAP synchronization,
   freshness behavior, CMDB source datasets, and proof scenarios.
+
+### Presentation quality gate
+
+Every new or materially revised slide receives two review passes before the
+deck is treated as publishable:
+
+1. an initial content and layout pass that establishes the narrative, evidence,
+   and visual hierarchy
+2. a rendered language and format pass that checks clarity, audience-appropriate
+   terminology, acronym expansion, title wrapping, readable type, overflow,
+   overlap, alignment, and consistency with the rest of the deck
+
+Findings from the second pass are reviewed before the presentation artifact is
+updated.
 
 ## Current mock quick start
 

@@ -139,8 +139,8 @@ operating model and pilot decision.
 
 The preferred presentation assets are:
 
-- `outputs/server-build-automation-modernization-leadership-brief.pptx`
-- `outputs/server-build-automation-modernization-engineering-brief.pptx`
+- `outputs/server-build-automation-modernization-leadership-brief-v2.pptx`
+- `outputs/server-build-automation-modernization-engineering-brief-v2.pptx`
 
 For a deeper architecture discussion, use:
 
